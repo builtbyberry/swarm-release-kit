@@ -1,7 +1,7 @@
 {
   "name": "srm",
   "displayName": "Swarm Release Manager (Claude)",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Release coordination for AI coding agents, backed by the hosted Swarm Release Manager store. Connects the SRM MCP server over OAuth so claims, drift, and startability live in one shared store — the same across machines, people, and agents — instead of repo-local JSON.",
   "author": {
     "name": "Daniel Berry",

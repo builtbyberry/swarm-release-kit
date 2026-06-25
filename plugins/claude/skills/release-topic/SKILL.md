@@ -28,13 +28,17 @@ machines.
      Stop — do not start; surface who has it.
    - **`not_startable`** → blockers unmet or the graph is `unverified`. Stop and
      explain; if unverified, run `/srm:release-graph` first.
-3. Only after a successful claim, create the topic branch
-   (`<type>/<release>-<ref>-<slug>`) and begin work.
+3. Only after a successful claim, mark the work started:
+   `mcp__srm__set_component_state { component, state: "in_progress" }`, then
+   create the topic branch (`<type>/<release>-<ref>-<slug>`) and begin work.
 4. During long-running work, call `mcp__srm__heartbeat_claim { claim }`
    periodically so the lease doesn't lapse. If a heartbeat returns `lease_lost`,
    **stop** — the claim was lost or revoked; re-claim before continuing.
-5. When the work is done or paused, release it (`/srm:release-unclaim` or
-   `mcp__srm__release_claim`).
+5. When the PR **lands**, advance the work-state so dependents unblock:
+   `mcp__srm__set_component_state { component, state: "merged" }`. This is
+   separate from the lock — releasing the claim alone does NOT mark it merged,
+   so a merged blocker won't open its dependents until you set this.
+6. Then release the lock (`/srm:release-unclaim` or `mcp__srm__release_claim`).
 
 ## Guardrails
 

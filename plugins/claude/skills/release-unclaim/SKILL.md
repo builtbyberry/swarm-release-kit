@@ -31,3 +31,7 @@ Return a claim to the shared SRM store so the component is free for someone else
 - Prefer `release_claim` for your own work; reserve `revoke_claim` for genuine
   recovery, and confirm before revoking someone else's hold.
 - Releasing doesn't undo committed work — it only frees the coordination lock.
+- **Releasing is not "done."** If the work merged, also mark the component
+  merged: `mcp__srm__set_component_state { component, state: "merged" }`.
+  Releasing the lock alone leaves the component `open`, so its dependents stay
+  blocked until you mark it merged.
