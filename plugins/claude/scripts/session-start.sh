@@ -8,9 +8,11 @@
 # repo's release-config.json, which the `srm` CLI resolves itself.
 set -uo pipefail
 
-# No CLI on PATH → say nothing (the skill will guide installation when invoked).
+# The agent talks to SRM over MCP; this hook is just an optional readiness ping
+# via the secondary CLI. No CLI on PATH → say nothing.
 command -v srm >/dev/null 2>&1 || exit 0
 
+export SRM_URL="${CLAUDE_PLUGIN_OPTION_SRM_URL:-${SRM_URL:-}}"
 export SRM_TOKEN="${CLAUDE_PLUGIN_OPTION_SRM_TOKEN:-${SRM_TOKEN:-}}"
 
 # `srm me` fails loud (non-zero) when the repo hasn't opted in, the token is

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "swarm-release": {
+      "type": "http",
+      "url": "${user_config.srm_url}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.srm_token}"
+      }
+    }
+  }
+}

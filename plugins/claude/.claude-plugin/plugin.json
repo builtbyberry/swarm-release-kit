@@ -1,8 +1,8 @@
 {
   "name": "swarm-release-claude",
   "displayName": "Swarm Release Manager (Claude)",
-  "version": "0.1.0",
-  "description": "Release coordination for AI coding agents, backed by the hosted Swarm Release Manager store. Lifts release-planning state out of repo-local JSON into a shared store the release-* skills read and drive over REST — so claims, drift, and startability are the same across machines, people, and agents.",
+  "version": "0.2.0",
+  "description": "Release coordination for AI coding agents, backed by the hosted Swarm Release Manager store. Connects the SRM MCP server so claims, drift, and startability live in one shared store — the same across machines, people, and agents — instead of repo-local JSON.",
   "author": {
     "name": "Daniel Berry",
     "email": "danielberrytn@gmail.com"
@@ -18,10 +18,16 @@
     "srm"
   ],
   "userConfig": {
+    "srm_url": {
+      "type": "string",
+      "title": "SRM store URL",
+      "description": "Base URL of your Swarm Release Manager store, e.g. https://srm.yourco.com. The plugin connects its MCP server at <url>/mcp.",
+      "required": true
+    },
     "srm_token": {
       "type": "string",
       "title": "SRM API token",
-      "description": "Your personal Swarm Release Manager API token. Stored in your system keychain, never in a repo. The store URL and project come from the repo's release-config.json.",
+      "description": "Your personal Swarm Release Manager API token. Stored in your system keychain, never in a repo, and sent as the MCP bearer token.",
       "sensitive": true,
       "required": true
     }

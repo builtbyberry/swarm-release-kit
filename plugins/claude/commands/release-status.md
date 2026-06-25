@@ -17,18 +17,14 @@ Read-only. This never claims, releases, or mutates anything.
 
 1. Resolve the release version. If `$ARGUMENTS` is empty, ask the user which
    release (or use the one in context). Do not guess.
-2. Run the client and render its output:
-
-   ```
-   srm status --release $ARGUMENTS
-   ```
-
-   - `● held` lines = live holds (who, where).
-   - `◌ drifting` lines = dropped holds that reopened — call these out; they're
-     the thing most likely to surprise a teammate.
-   - The header tallies startable / held / drifting.
-3. If the command exits non-zero, surface the store's error verbatim (it fails
-   loud: auth, unreachable store, or a repo that hasn't opted into SRM). Don't
-   paper over it.
+2. Call `mcp__swarm-release__release_status` with `{ release: "$ARGUMENTS" }`
+   and render the result:
+   - `held` — live holds (each with the actor + machine). Lead with these.
+   - `drifting` — dropped holds that reopened. Call these out; they're the thing
+     most likely to surprise a teammate.
+   - `startable` — the count still ready to pick up.
+   - If the MCP server isn't connected, fall back to `srm status --release $ARGUMENTS`.
+3. On a tool error, surface it verbatim (`release_not_found`, auth/connection).
+   Don't paper over it.
 
 For *what to start next* (ranked by what it unblocks), use `/release-next`.

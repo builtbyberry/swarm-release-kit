@@ -1,58 +1,42 @@
 ---
 name: release-next
-description: "Recommend the next startable release work from the Swarm Release Manager store. Use when the user says /release-next, what is next, what should I work on, or I have a time budget — in a repo whose release-config.json opts into the SRM backend."
+description: "Recommend the next startable release work from the Swarm Release Manager store. Use when the user says /release-next, what is next, what should I work on, or I have a time budget."
 ---
 
-# Release Next (SRM-backed)
+# Release Next (SRM)
 
-Recommend 1–3 startable components from the active release, reading the **shared
-SRM store** over REST instead of a repo-local `release-plan.json`. This is the
-SRM variant of `release-next`: read-first, it never claims work.
+Recommend 1–3 startable components from a release, reading the **shared SRM
+store** through its MCP tools instead of a repo-local `release-plan.json`. This
+is read-first; it never claims work.
 
 It is the proof of the lift — startability is computed *server-side* from the
 release's dependency graph and live claims, so two people (or an agent and a
 human) on different machines see the same truth.
 
-## When this applies
+## How it talks to the store
 
-Only when this repo opts into SRM. Check `.claude/release-config.json`:
+This plugin connects the SRM MCP server (configured with your store URL + token
+when you enabled the plugin). Use its tools directly:
 
-```jsonc
-"state": { "backend": "srm", "url": "https://…", "project": "<project-slug>" }
-```
+- `mcp__swarm-release__release_next` — startable work, ranked by what it unblocks
+- `mcp__swarm-release__release_status` — who holds what + drift
+- `mcp__swarm-release__release_get` — the full release document
 
-If `state.backend` is absent or not `"srm"`, this skill does not apply — defer
-to the local-JSON `release-next`. Never edit a repo's backend choice yourself.
-
-## Inputs
-
-- `.claude/release-config.json` `state` block (store URL + project) — resolved by the CLI.
-- The actor's API token. As the Claude plugin it's the `srm_token` you set at
-  enable time (kept in your system keychain); the CLI also accepts `SRM_TOKEN`
-  from the environment. Never read from a committed file.
-- The release version/slug, from the user or the active release.
-
-The CLI (`srm`) is the only thing that touches the store. Do not hand-craft HTTP
-calls or read local state files; shell out to it so behavior stays identical
-across hosts.
+If those tools aren't available (the MCP server isn't connected), fall back to
+the `srm` CLI: `srm next --release <version> --json`. Same data, secondary path.
 
 ## Procedure
 
-1. Confirm the SRM backend is active (above). If not, stop and say so.
-2. Resolve the release version. If the user didn't give one and it's ambiguous,
+1. Resolve the release version. If the user didn't give one and it's ambiguous,
    ask — do not guess.
-3. Run the client:
-
-   ```
-   srm next --release <version> --json
-   ```
-
-   - Exit 0 with `startable: [...]` → render the recommendations.
-   - Exit 0 with an empty list → report what's blocking (the human form,
-     `srm next --release <version>`, prints the reason tally, e.g.
-     `1 unverified`, `2 blocked`).
-   - Non-zero exit → surface the store's error verbatim (it fails loud:
-     `not_startable`, `claim_conflict`, an auth/url problem). Do not paper over it.
+2. Call `mcp__swarm-release__release_next` with `{ release: "<version>" }`
+   (add `project` only to disambiguate the same version across projects).
+3. Render the result:
+   - `startable` non-empty → recommend the top 1–3 (already ranked).
+   - `startable` empty → report what's blocking from `blocked_summary`
+     (e.g. `{ "unverified": 1 }`, `{ "blocked": 2 }`).
+   - Tool error → surface it verbatim (`release_not_found`, an auth/connection
+     problem). Do not paper over it.
 
 ## Output
 
@@ -64,14 +48,14 @@ For each recommendation (already ranked by what it unblocks):
 
 End with:
 
-- `start <ref>` to begin work (hand off to `/release-topic`)
+- `start <ref>` to begin work — claim it with `mcp__swarm-release__claim_component`
 - `/release-parallel <refs>` to dispatch several startable components at once
 
 ## Guardrails
 
-- Do not claim, heartbeat, or release — that's the write path of other skills.
-- Do not mutate the tracker or local git state.
-- Do not invent startability. If `srm next` returns nothing, the answer is
+- Do not claim, heartbeat, or release here — recommending is read-only. The
+  claim lifecycle is a deliberate next step.
+- Do not invent startability. If `release_next` returns nothing, the answer is
   "nothing is startable, here's why" — never relax the server's verdict.
 - If the graph is `unverified`, say so plainly: the release needs
   `/release-graph` before work is safe to start (the store's fail-safe default).

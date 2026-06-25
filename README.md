@@ -3,8 +3,11 @@
 Release coordination for AI coding agents, backed by the hosted **Swarm Release
 Manager (SRM)** store. It lifts release-planning state out of repo-local,
 gitignored JSON (`release-plan.json`, `release-state.json`, …) into a shared
-store the `release-*` skills read and drive over REST — so **claims, drift, and
-startability are the same across machines, people, and agents**.
+store — so **claims, drift, and startability are the same across machines,
+people, and agents**.
+
+Agents talk to the store **natively over MCP**; each host plugin just connects
+the same hosted MCP endpoint. The `srm` CLI is the secondary path for humans/CI.
 
 This is a **monorepo**: one agent-agnostic core, one plugin per agent host.
 
@@ -28,38 +31,30 @@ behavior is identical everywhere and the API contract lives in one place.
 /plugin install swarm-release-claude@swarm-release-kit
 ```
 
-At enable time you'll be asked for your **SRM API token** (kept in your system
-keychain). The store URL and project come from each repo's
-`release-config.json`. Install the core CLI too:
+At enable time you'll be asked for your **SRM store URL** and **API token**
+(the token is kept in your system keychain). The plugin then connects the SRM
+MCP server at `<url>/mcp` with that token as the bearer — no per-repo setup
+needed. Optionally install the core CLI for human/CI use:
 
 ```
 npm install -g @builtbyberry/srm-cli
 ```
 
-## Opt-in (never breaks existing repos)
+## How the agent reaches the store
 
-A repo uses SRM only when its `.claude/release-config.json` opts in:
-
-```jsonc
-{
-  "state": {
-    "backend": "srm",        // default "local-json" — unchanged behavior
-    "url": "https://your-srm-host",
-    "project": "your-project-slug"
-  }
-}
-```
-
-Without the opt-in, the plugin stays silent and the existing local-JSON
-`release-*` skills run exactly as before.
+The plugin registers the hosted SRM **MCP server**; the skills drive its tools
+(`mcp__swarm-release__release_next`, `…__claim_component`, …). The same REST
+store also powers the web UI and the `srm` CLI — MCP is just the agent surface.
 
 ## What ships in the Claude plugin
 
 | Surface | What it does |
 | --- | --- |
+| `.mcp.json` | Connects the hosted SRM MCP server (bearer auth from keychain). |
 | `skills/release-next` | Startable work, ranked by what it unblocks (read-only). |
 | `commands/release-status` | `/release-status` — who holds what + drift, at a glance. |
-| `hooks/SessionStart` | Surfaces live store connection at session start (silent for non-SRM repos). |
+| `hooks/SessionStart` | Optional CLI readiness ping (silent without the CLI). |
+| `userConfig` | `srm_url` + `srm_token` (keychain) — the MCP connection. |
 | `userConfig.srm_token` | API token, stored in the system keychain — never in a repo. |
 
 ## Develop
