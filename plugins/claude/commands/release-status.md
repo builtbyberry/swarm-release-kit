@@ -17,7 +17,7 @@ Read-only. This never claims, releases, or mutates anything.
 
 1. Resolve the release version. If `$ARGUMENTS` is empty, ask the user which
    release (or use the one in context). Do not guess.
-2. Call `mcp__swarm-release__release_status` with `{ release: "$ARGUMENTS" }`
+2. Call `mcp__srm__release_status` with `{ release: "$ARGUMENTS" }`
    and render the result:
    - `held` — live holds (each with the actor + machine). Lead with these.
    - `drifting` — dropped holds that reopened. Call these out; they're the thing

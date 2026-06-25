@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "swarm-release": {
+    "srm": {
       "type": "http",
       "url": "${user_config.srm_url}/mcp"
     }

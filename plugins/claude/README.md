@@ -22,7 +22,7 @@ plugins/claude/
   scripts/session-start.sh     the hook body (silent without the CLI)
 ```
 
-The MCP tools appear as `mcp__swarm-release__release_next`,
+The MCP tools appear as `mcp__srm__release_next`,
 `…__release_status`, `…__release_get`, `…__claim_component`,
 `…__heartbeat_claim`, `…__release_claim`, `…__revoke_claim`.
 

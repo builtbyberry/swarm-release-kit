@@ -18,9 +18,9 @@ human) on different machines see the same truth.
 This plugin connects the SRM MCP server (configured with your store URL + token
 when you enabled the plugin). Use its tools directly:
 
-- `mcp__swarm-release__release_next` — startable work, ranked by what it unblocks
-- `mcp__swarm-release__release_status` — who holds what + drift
-- `mcp__swarm-release__release_get` — the full release document
+- `mcp__srm__release_next` — startable work, ranked by what it unblocks
+- `mcp__srm__release_status` — who holds what + drift
+- `mcp__srm__release_get` — the full release document
 
 If those tools aren't available (the MCP server isn't connected), fall back to
 the `srm` CLI: `srm next --release <version> --json`. Same data, secondary path.
@@ -29,7 +29,7 @@ the `srm` CLI: `srm next --release <version> --json`. Same data, secondary path.
 
 1. Resolve the release version. If the user didn't give one and it's ambiguous,
    ask — do not guess.
-2. Call `mcp__swarm-release__release_next` with `{ release: "<version>" }`
+2. Call `mcp__srm__release_next` with `{ release: "<version>" }`
    (add `project` only to disambiguate the same version across projects).
 3. Render the result:
    - `startable` non-empty → recommend the top 1–3 (already ranked).
@@ -48,7 +48,7 @@ For each recommendation (already ranked by what it unblocks):
 
 End with:
 
-- `start <ref>` to begin work — claim it with `mcp__swarm-release__claim_component`
+- `start <ref>` to begin work — claim it with `mcp__srm__claim_component`
 - `/release-parallel <refs>` to dispatch several startable components at once
 
 ## Guardrails

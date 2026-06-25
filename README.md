@@ -28,7 +28,7 @@ behavior is identical everywhere and the API contract lives in one place.
 
 ```
 /plugin marketplace add builtbyberry/swarm-release-kit
-/plugin install swarm-release-claude@swarm-release-kit
+/plugin install srm@swarm-release-kit
 ```
 
 At enable time you'll be asked for your **SRM store URL**. The plugin connects
@@ -44,7 +44,7 @@ npm install -g @builtbyberry/srm-cli
 ## How the agent reaches the store
 
 The plugin registers the hosted SRM **MCP server**; the skills drive its tools
-(`mcp__swarm-release__release_next`, `…__claim_component`, …). The same REST
+(`mcp__srm__release_next`, `…__claim_component`, …). The same REST
 store also powers the web UI and the `srm` CLI — MCP is just the agent surface.
 
 ## What ships in the Claude plugin

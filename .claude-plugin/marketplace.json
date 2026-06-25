@@ -10,7 +10,7 @@
   },
   "plugins": [
     {
-      "name": "swarm-release-claude",
+      "name": "srm",
       "source": "./plugins/claude",
       "description": "Claude Code host adapter for the Swarm Release Manager store.",
       "keywords": ["swarm", "release", "claude-code", "srm"]
