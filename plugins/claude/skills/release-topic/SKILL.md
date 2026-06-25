@@ -46,5 +46,6 @@ machines.
   `not_startable` is a hard stop, not a warning to work around.
 - The claim is the source of truth, not the branch. If you lose the lease, the
   branch doesn't protect you — re-claim.
-- One component per claim. To pick up several startable components at once, use
-  `/srm:release-parallel` (dispatches a claim each).
+- One component per claim. To work several, claim each with `/srm:release-topic`.
+  (One-shot concurrent dispatch — `/srm:release-parallel` — is planned but not
+  yet available.)

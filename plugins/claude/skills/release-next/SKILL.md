@@ -49,7 +49,8 @@ For each recommendation (already ranked by what it unblocks):
 End with:
 
 - `start <ref>` to begin work — claim it with `mcp__srm__claim_component`
-- `/release-parallel <refs>` to dispatch several startable components at once
+- to take more than one, claim each with `/srm:release-topic` (concurrent
+  dispatch via `/srm:release-parallel` is planned, not yet available)
 
 ## Guardrails
 
