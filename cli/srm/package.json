@@ -1,0 +1,37 @@
+{
+    "name": "@builtbyberry/srm-cli",
+    "version": "0.1.0",
+    "description": "The Swarm Release Manager client: read and drive lifted release-planning state in the shared SRM store from the release-* skills.",
+    "type": "module",
+    "bin": {
+        "srm": "bin/srm.js"
+    },
+    "files": [
+        "bin",
+        "lib",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "test": "node --test",
+        "prepublishOnly": "node --test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/builtbyberry/swarm-release-manager.git",
+        "directory": "cli/srm"
+    },
+    "keywords": [
+        "swarm",
+        "release",
+        "srm",
+        "claude-code",
+        "cli"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "license": "MIT"
+}
