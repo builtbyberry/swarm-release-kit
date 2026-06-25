@@ -29,12 +29,12 @@ The MCP tools appear as `mcp__swarm-release__release_next`,
 ## Config (set when you enable the plugin)
 
 - **`srm_url`** — base URL of your SRM store; the MCP server connects at `<url>/mcp`.
-- **`srm_token`** — your personal API token. Stored in the system keychain
-  (never a repo) and sent as the MCP bearer token.
 
-No per-repo opt-in is needed for the MCP connection — enabling the plugin
-connects it. (The secondary `srm` CLI still honors `release-config.json`
-`state.backend = "srm"` for its own commands.)
+Auth is **OAuth 2.1** (authorization-code + PKCE, Dynamic Client Registration):
+the client self-registers, you approve the connection in your browser and pick
+the workspace it may operate in — no token to paste or store. No per-repo opt-in
+is needed; enabling the plugin connects it. (The secondary `srm` CLI authenticates
+with its own bearer token from the environment for human/CI use.)
 
 ## Status
 

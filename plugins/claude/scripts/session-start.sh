@@ -13,7 +13,8 @@ set -uo pipefail
 command -v srm >/dev/null 2>&1 || exit 0
 
 export SRM_URL="${CLAUDE_PLUGIN_OPTION_SRM_URL:-${SRM_URL:-}}"
-export SRM_TOKEN="${CLAUDE_PLUGIN_OPTION_SRM_TOKEN:-${SRM_TOKEN:-}}"
+# The CLI's own bearer (a Passport token) comes from the environment when used.
+export SRM_TOKEN="${SRM_TOKEN:-}"
 
 # `srm me` fails loud (non-zero) when the repo hasn't opted in, the token is
 # missing, or the store is unreachable — in all those cases we emit nothing.

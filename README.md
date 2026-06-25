@@ -31,10 +31,11 @@ behavior is identical everywhere and the API contract lives in one place.
 /plugin install swarm-release-claude@swarm-release-kit
 ```
 
-At enable time you'll be asked for your **SRM store URL** and **API token**
-(the token is kept in your system keychain). The plugin then connects the SRM
-MCP server at `<url>/mcp` with that token as the bearer — no per-repo setup
-needed. Optionally install the core CLI for human/CI use:
+At enable time you'll be asked for your **SRM store URL**. The plugin connects
+the SRM MCP server at `<url>/mcp` and authenticates over **OAuth** — you approve
+the connection in your browser and pick a workspace, no token to paste. (The
+client self-registers via OAuth Dynamic Client Registration.) Optionally install
+the core CLI for human/CI use:
 
 ```
 npm install -g @builtbyberry/srm-cli
@@ -50,11 +51,11 @@ store also powers the web UI and the `srm` CLI — MCP is just the agent surface
 
 | Surface | What it does |
 | --- | --- |
-| `.mcp.json` | Connects the hosted SRM MCP server (bearer auth from keychain). |
+| `.mcp.json` | Connects the hosted SRM MCP server (OAuth — self-registers, browser consent). |
 | `skills/release-next` | Startable work, ranked by what it unblocks (read-only). |
 | `commands/release-status` | `/release-status` — who holds what + drift, at a glance. |
 | `hooks/SessionStart` | Optional CLI readiness ping (silent without the CLI). |
-| `userConfig` | `srm_url` + `srm_token` (keychain) — the MCP connection. |
+| `userConfig` | `srm_url` — the store base; auth is OAuth, no token to store. |
 | `userConfig.srm_token` | API token, stored in the system keychain — never in a repo. |
 
 ## Develop
