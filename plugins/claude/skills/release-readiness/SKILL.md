@@ -16,28 +16,37 @@ same lens mechanics and verdict rubric, but findings are durable store rows
 
 ## How it talks to the store
 
-- `mcp__srm__release_get` — read the release: its components **and its existing
-  findings**. This is the state — there is no local file to read.
+- `mcp__srm__release_get` — read the release: its components, its **existing
+  findings**, and its **lens selection** (`project.reviews.readiness.lenses`).
+  This is the state — there is no local file to read.
+- `mcp__srm__lenses_get` — resolve the selected lens **definitions**
+  (`{ slugs: [...] }` → each lens's frontmatter + body). The store is the
+  catalog; there is **no `~/.claude/skills/_lenses` fallback**. Any slug it can't
+  resolve comes back as `lens_not_found` — surface it and stop.
 - `mcp__srm__record_finding` — record a new readiness finding
   (`{ release, kind: "readiness", ref, severity, summary, rationale?, component_id? }`).
 - `mcp__srm__resolve_finding` — transition a finding
   (`{ finding, status, rationale? }`): `deferred | accepted | fixed | open`.
 
 (If the MCP server isn't connected, stop and say so — there is no local fallback
-for store findings.)
+for store findings *or* lenses.)
 
 ## Config
 
-Reads `.claude/release-config.json` from the current checkout. Refuses if missing
-— point the user at `/release-init`.
+**Lens selection and definitions both come from the SRM store — not local files.**
 
-Fields used:
-- `reviews.readiness.lenses` — array of lens slugs to load and run. Each slug must
-  resolve to `~/.claude/skills/_lenses/<slug>.md`. Refuse on any unresolved slug
-  or malformed frontmatter — do not silently skip.
-- `wrap.mode` — informational (the verdict language matches deploy vs tag).
+- **Selection** — `release_get { release }` returns `project.reviews.readiness.lenses`,
+  the array of lens slugs for this release. If it is empty, no readiness lenses are
+  selected: **stop and say so** (set them with `set_release_lenses`), never review
+  with an empty lens set.
+- **Definitions** — `lenses_get { slugs }` returns each lens (frontmatter + body).
+  The store is authoritative; there is no `~/.claude/skills/_lenses/<slug>.md`
+  fallback. Any unresolved slug fails loud (`lens_not_found`) — surface it and
+  stop, never silently skip.
 
-The lens catalog format is at `~/.claude/skills/_lenses/_format.md`.
+`.claude/release-config.json` is still read for non-lens fields only — `wrap.mode`
+(informational; verdict language matches deploy vs tag). Lifting the rest of
+release-config into the store is roadmapped separately.
 
 ## The store is the state (no local file)
 
@@ -65,8 +74,9 @@ the store — surface it verbatim; never work around it.
 
 Resolve the release version (ask if ambiguous — don't guess). Then
 `mcp__srm__release_get { release }` to load:
-- the components (ids, titles, refs) — for `component_id` scoping, and
-- the **existing findings** — so this run reconciles against them (Step 5).
+- the components (ids, titles, refs) — for `component_id` scoping,
+- the **existing findings** — so this run reconciles against them (Step 6), and
+- the **lens selection** at `project.reviews.readiness.lenses` — the slugs to run (Step 3).
 
 ### Step 2 — Gather release context
 
@@ -78,24 +88,44 @@ git diff <release-base>..HEAD --name-only   # changed files
 Read `CHANGELOG.md` (the "Unreleased"/active section) and any migration/config
 files the lenses care about. Know what changed before forming a view.
 
-### Step 3 — Load and run lenses
+### Step 3 — Resolve lenses from the store
 
-1. Read `reviews.readiness.lenses` from `.claude/release-config.json`. If empty,
-   refuse and point the user at `/release-init`.
-2. For each slug, load `~/.claude/skills/_lenses/<slug>.md`. Refuse on unresolved
-   slug or malformed frontmatter.
-3. For each lens, evaluate its `## Purpose` against the release context; if its
-   "skip when" condition fires, note "lens skipped" and move on.
-4. For lenses that apply, walk `## Questions to ask`, scan `## Anti-patterns to
-   flag`, anchor against `## Examples` and `## Severity calibration`, and use
-   `## How findings from this lens sound` to shape the voice of each finding.
+1. From the Step-1 `release_get`, take `project.reviews.readiness.lenses`. If empty,
+   **stop**: no readiness lenses are selected for this release (set them with
+   `set_release_lenses`). Never review with an empty lens set.
+2. `mcp__srm__lenses_get { slugs: <those slugs> }` to fetch the definitions. Any
+   `lens_not_found` → surface it verbatim and stop. There is no `~/.claude`
+   fallback and no silent skip.
 
-### Step 4 — Cross-lens synthesis
+### Step 4 — Run lenses: one subagent per lens, in parallel
+
+Fan out **one subagent per resolved lens, concurrently** — dispatch them in a
+single message (one Task/Agent call per lens) so they run in parallel, then
+aggregate. Give each subagent:
+- the lens **body** (from `lenses_get`),
+- the release **context** (Step 2: commit log, changed files, CHANGELOG, relevant
+  migration/config files), and
+- the instruction below.
+
+Each subagent:
+- evaluates the lens `## Purpose` against the release context; if its "skip when"
+  condition fires, returns `skipped (not applicable)`.
+- otherwise walks `## Questions to ask`, scans `## Anti-patterns to flag`, anchors
+  against `## Examples` and `## Severity calibration`, and uses `## How findings
+  from this lens sound` to shape voice.
+- **returns** its candidate findings as structured data (severity, where, issue,
+  fix), attributed to the lens by its frontmatter `name`. It does **not** call
+  `record_finding` — recording is centralized in the parent (Step 6) so
+  reconciliation stays idempotent.
+
+Aggregate every subagent's findings before continuing.
+
+### Step 5 — Cross-lens synthesis
 
 Do one integration pass using each lens's `related:` array. When a finding was
 surfaced or sharpened by another lens, note it: `*(+ <lens-name> via synthesis)*`.
 
-### Step 5 — Reconcile against the store, then record (idempotent re-run)
+### Step 6 — Reconcile against the store, then record (idempotent re-run)
 
 `record_finding` is **not idempotent** — calling it again writes another row. So
 before recording, reconcile each fresh finding against the existing store

@@ -18,27 +18,37 @@ than a local file. It is the change-review counterpart to `/srm:release-readines
 ## How it talks to the store
 
 - `mcp__srm__release_get` — read the release: its components (for `component_id`
-  scoping) **and its existing findings**. This is the state — there is no local
-  file to read.
+  scoping), its **existing findings**, and its **lens selection**
+  (`project.reviews.change.lenses`). This is the state — there is no local file
+  to read.
+- `mcp__srm__lenses_get` — resolve the selected lens **definitions**
+  (`{ slugs: [...] }` → each lens's frontmatter + body). The store is the
+  catalog; there is **no `~/.claude/skills/_lenses` fallback**. Any slug it can't
+  resolve comes back as `lens_not_found` — surface it and stop.
 - `mcp__srm__record_finding` — record a new change finding
   (`{ release, kind: "change", ref, severity, summary, rationale?, component_id }`).
 - `mcp__srm__resolve_finding` — transition a finding
   (`{ finding, status, rationale? }`): `deferred | accepted | fixed | open`.
 
 (If the MCP server isn't connected, stop and say so — there is no local fallback
-for store findings.)
+for store findings *or* lenses.)
 
 ## Config
 
-Reads `.claude/release-config.json` from the current checkout. Refuses if missing
-— point the user at `/release-init`.
+**Lens selection and definitions both come from the SRM store — not local files.**
 
-Fields used:
-- `reviews.change.lenses` — array of lens slugs to load and run. Each slug must
-  resolve to `~/.claude/skills/_lenses/<slug>.md`. Refuse on any unresolved slug
-  or malformed frontmatter — do not silently skip.
+- **Selection** — `release_get { release }` returns `project.reviews.change.lenses`,
+  the array of lens slugs for this release. If it is empty, no change lenses are
+  selected: **stop and say so** (set them with `set_release_lenses`), never review
+  with an empty lens set.
+- **Definitions** — `lenses_get { slugs }` returns each lens (frontmatter + body).
+  The store is authoritative; there is no `~/.claude/skills/_lenses/<slug>.md`
+  fallback. Any unresolved slug fails loud (`lens_not_found`) — surface it and
+  stop, never silently skip.
 
-The lens catalog format is at `~/.claude/skills/_lenses/_format.md`.
+`.claude/release-config.json` is still read for non-lens fields only —
+`default_branch` (the diff base). Lifting the rest of release-config into the
+store is roadmapped separately.
 
 ## The store is the state (no local file)
 
@@ -103,34 +113,53 @@ not part of this component. Use `default_branch` from `.claude/release-config.js
 
 Resolve the release version (ask if ambiguous — don't guess) and the component (see
 **Resolving the component** above). Then `mcp__srm__release_get { release }` to load:
-- the components (ids, titles, refs) — to confirm the resolved `component_id`, and
+- the components (ids, titles, refs) — to confirm the resolved `component_id`,
 - the **existing findings**, filtered to `kind: "change"` — so this run reconciles
-  against them (Step 5).
+  against them (Step 6), and
+- the **lens selection** at `project.reviews.change.lenses` — the slugs to run (Step 3).
 
 ### Step 2 — Gather the component diff
 
 Compute the diff as in **Gathering the diff** above. Read `CHANGELOG.md` and any
 files the lenses care about. Know what changed before forming a view.
 
-### Step 3 — Load and run lenses
+### Step 3 — Resolve lenses from the store
 
-1. Read `reviews.change.lenses` from `.claude/release-config.json`. If empty,
-   refuse and point the user at `/release-init`.
-2. For each slug, load `~/.claude/skills/_lenses/<slug>.md`. Refuse on unresolved
-   slug or malformed frontmatter.
-3. For each lens, evaluate its `## Purpose` against the diff; if its "skip when"
-   condition fires, note "lens skipped (not applicable to this diff)" and move on.
-4. For lenses that apply, walk `## Questions to ask`, scan `## Anti-patterns to
-   flag`, anchor against `## Examples` and `## Severity calibration`, and use
-   `## How findings from this lens sound` to shape the voice of each finding.
-   Attribute each finding to its primary lens by its frontmatter `name`.
+1. From the Step-1 `release_get`, take `project.reviews.change.lenses`. If empty,
+   **stop**: no change lenses are selected for this release (set them with
+   `set_release_lenses`). Never review with an empty lens set.
+2. `mcp__srm__lenses_get { slugs: <those slugs> }` to fetch the definitions. Any
+   `lens_not_found` → surface it verbatim and stop. There is no `~/.claude`
+   fallback and no silent skip.
 
-### Step 4 — Cross-lens synthesis
+### Step 4 — Run lenses: one subagent per lens, in parallel
+
+Fan out **one subagent per resolved lens, concurrently** — dispatch them in a
+single message (one Task/Agent call per lens) so they run in parallel, then
+aggregate. Give each subagent:
+- the lens **body** (from `lenses_get`),
+- the component **diff** and changed-file list (Step 2), and
+- the instruction below.
+
+Each subagent:
+- evaluates the lens `## Purpose` against the diff; if its "skip when" condition
+  fires, returns `skipped (not applicable to this diff)`.
+- otherwise walks `## Questions to ask`, scans `## Anti-patterns to flag`, anchors
+  against `## Examples` and `## Severity calibration`, and uses `## How findings
+  from this lens sound` to shape voice.
+- **returns** its candidate findings as structured data (severity, where, issue,
+  fix), attributed to the lens by its frontmatter `name`. It does **not** call
+  `record_finding` — recording is centralized in the parent (Step 6) so
+  reconciliation stays idempotent.
+
+Aggregate every subagent's findings before continuing.
+
+### Step 5 — Cross-lens synthesis
 
 Do one integration pass using each lens's `related:` array. When a finding was
 surfaced or sharpened by another lens, note it: `*(+ <lens-name> via synthesis)*`.
 
-### Step 5 — Reconcile against the store, then record (idempotent re-run)
+### Step 6 — Reconcile against the store, then record (idempotent re-run)
 
 `record_finding` is **not idempotent** — calling it again writes another row. So
 before recording, reconcile each fresh finding against the existing `kind: "change"`
@@ -218,8 +247,9 @@ open/deferred store findings.
 
 ## Compressed pass (trivial changes)
 
-For a trivial diff, emit the verdict section followed by one sentence per lens.
-Expand any lens that surfaces non-trivial risk to a full finding.
+For a trivial diff, run the lenses **inline** (skip the per-lens fan-out — the
+parallelism isn't worth it) and emit the verdict section followed by one sentence
+per lens. Expand any lens that surfaces non-trivial risk to a full finding.
 
 ## Post-review actions
 

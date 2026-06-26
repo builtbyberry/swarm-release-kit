@@ -22,3 +22,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   The store port of `swarm-release-readiness`: findings are durable store rows,
   reconciled on re-run (no duplicates) and read back from the release document
   instead of a repo-local `review-state.json`.
+
+### Changed
+
+- `/srm:change-review` and `/srm:release-readiness` now resolve **lenses from the
+  SRM store**, not local files. Lens *selection* comes from the release document
+  (`project.reviews.<scope>.lenses` via `release_get`) and lens *definitions* from
+  `lenses_get` — there is no `~/.claude/skills/_lenses` fallback, and an empty
+  selection or an unresolved slug fails loud. So a clean `srm` install reviews
+  with no machine-global catalog and no repo-local lens config. Both skills now
+  **fan out one subagent per lens in parallel**, then aggregate, synthesize, and
+  record centrally (recording stays idempotent). (Requires the backend lens
+  table + `lenses_get`/`set_release_lenses` tools.)
