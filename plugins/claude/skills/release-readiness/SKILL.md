@@ -102,7 +102,8 @@ files the lenses care about. Know what changed before forming a view.
 Fan out **one subagent per resolved lens, concurrently** — dispatch them in a
 single message (one Task/Agent call per lens) so they run in parallel, then
 aggregate. Give each subagent:
-- the lens **body** (from `lenses_get`),
+- the lens **`name`, `body`, and `related`** (from `lenses_get`) — `name` for
+  attributing its findings, `body` to run the lens, `related` for synthesis,
 - the release **context** (Step 2: commit log, changed files, CHANGELOG, relevant
   migration/config files), and
 - the instruction below.
