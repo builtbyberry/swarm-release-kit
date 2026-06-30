@@ -9,6 +9,8 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+## [0.8.0] - 2026-06-30
+
 ### Added
 
 - **`/srm:release-init`** — bootstrap a project + release directly in the shared
