@@ -24,14 +24,17 @@ against a release that already exists **resumes** rather than duplicating.
 
 ## How it talks to the store
 
-- `mcp__srm__project_create` — resolve-or-create the workspace project. The repo
-  / external slug is **optional**; a project does not require a GitHub repo. If a
-  project already matches in the current workspace it is reused, not duplicated.
+- `mcp__srm__project_create` — resolve-or-create the workspace project. The
+  external-tracker link — `repo` (owner/name) plus `tracker_kind` (github /
+  jira / linear) — lives **here** and is **optional**; a project does not
+  require a GitHub repo. If a project already matches in the current workspace
+  it is reused, not duplicated.
 - `mcp__srm__release_get` — probe whether the release already exists under the
   project, so a re-run **resumes** instead of creating a second one.
-- `mcp__srm__release_create` — create the release under the project from theme,
-  version-or-slug, and out_of_scope (with an optional generic `external_ref`).
-  `source` is recorded as `native` (vs `imported` for the GitHub-import path).
+- `mcp__srm__release_create` — create the release under the project from
+  `theme`, `version` (a version-or-slug like `v0.5.0`), and `out_of_scope`.
+  `slug` is derived from `version` when omitted. `source` is recorded as
+  `native` (vs `imported` for the GitHub-import path).
 
 Both creates are workspace-scoped and fail-closed — no cross-workspace create,
 no existence leak — matching the rest of the write path.
@@ -47,8 +50,8 @@ be born.
 ## Procedure
 
 1. **Gather the release inputs** (ask; don't guess):
-   - **Project** — the workspace project name (and optionally a repo / external
-     slug, which stays optional).
+   - **Project** — the workspace project name (and optionally the external
+     tracker link `repo` + `tracker_kind`, which stays optional).
    - **Theme** — a one-line theme for the release (becomes the CHANGELOG intro
      and PR subtitle downstream). Accept `_TBD_` and remind the operator to fill
      it in at wrap.
@@ -58,8 +61,15 @@ be born.
    does not expose `project_create` / `release_create`, stop and surface the
    import fallback above (`php artisan srm:import-release`). This is a graceful
    refusal, not an error to work around.
-3. **Resolve-or-create the project.**
-   `mcp__srm__project_create { name: "<project>", repo?: "<owner/repo>" }`.
+3. **Resolve-or-create the project — and offer the optional external-tracker
+   link here.**
+   `mcp__srm__project_create { name: "<project>", repo?: "<owner/repo>",
+   tracker_kind?: "github | jira | linear" }`.
+   - The external-tracker link lives on the **project**: `repo` (owner/name)
+     plus `tracker_kind` (github / jira / linear). Ask whether to link one;
+     make clear it is **skippable** and that the store is the source of truth —
+     it's a stored link only, no GitHub/Jira/Linear API call, no bidirectional
+     sync. If the operator skips, omit `repo` / `tracker_kind`.
    - It returns the project whether it already existed in the workspace or was
      just created. Report which happened ("reused existing project" vs "created
      project") so the operator knows nothing was duplicated.
@@ -67,20 +77,16 @@ be born.
    `mcp__srm__release_get { project: <project>, release: "<version-or-slug>" }`.
    - **Found** → the release already exists. **Do not create a second one.**
      Report it as already live and hand off (its components/graph are the next
-     step). Note that the external link can't be changed from here (create-only;
-     no edit tool) — surface its current value as-is.
+     step). Note that the project's external link can't be changed from here
+     (create-only; no edit tool) — surface its current value as-is.
    - **Not found** → continue to create it.
-5. **Offer the optional external-tracker link.** Ask whether to link an external
-   tracker — GitHub / Jira / Linear — as a generic
-   `external_ref { provider, id, url }`. Make clear it is **skippable** and that
-   the store is the source of truth (it's a stored link only — no Jira/Linear API
-   call, no bidirectional sync). If the operator skips, omit it.
-6. **Create the release.**
-   `mcp__srm__release_create { project: <project>, version_or_slug:
-   "<version-or-slug>", theme: "<theme>", out_of_scope: "<out_of_scope>",
-   external_ref?: { provider, id, url } }`.
-   `source` defaults to `native`. On success, report the created release.
-7. **Report.** Print the project (reused or created), the release version-or-slug
+5. **Create the release.**
+   `mcp__srm__release_create { project: <project>, version:
+   "<version-or-slug>", slug?: "<slug>", theme: "<theme>", out_of_scope:
+   "<out_of_scope>" }`.
+   `slug` is derived from `version` when omitted; `source` defaults to
+   `native`. On success, report the created release.
+6. **Report.** Print the project (reused or created), the release version-or-slug
    and theme, whether an external link was attached, and the next step:
    `Run /srm:release-plan to add components, then /srm:release-graph to verify the
    dependency graph, and /srm:release-open to cut the branch.`
