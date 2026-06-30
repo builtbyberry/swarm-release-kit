@@ -46,6 +46,19 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
   reports per-member status instead of re-dispatching. The store-driven counterpart
   to the GitHub-plan-driven `/release-parallel`. (#54)
 
+### Changed
+
+- Skill guidance aligned with the store's new edit write-path
+  (`project_update` / `release_update` / `component_update`): `/srm:release-init`
+  no longer claims the store has "no edit tool by design" — a created record is
+  now editable via those tools (the skill itself stays create-only), and a
+  resume points at `project_update` for changing a project's external link.
+  `/srm:release-plan`'s out-of-scope sweep now offers to write the cuts straight
+  onto the release via `release_update` instead of only reminding the operator.
+  `/srm:release-open` corrects its stale "no create release tool by design"
+  guardrail — a missing release is seeded with `/srm:release-init` (native
+  `release_create`) or a GitHub-milestone import, not import-only.
+
 ## [0.7.0] - 2026-06-29
 
 First tagged release of the `srm` Claude Code plugin — release coordination for AI

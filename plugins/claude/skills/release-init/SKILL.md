@@ -77,8 +77,9 @@ be born.
    `mcp__srm__release_get { project: <project>, release: "<version-or-slug>" }`.
    - **Found** → the release already exists. **Do not create a second one.**
      Report it as already live and hand off (its components/graph are the next
-     step). Note that the project's external link can't be changed from here
-     (create-only; no edit tool) — surface its current value as-is.
+     step). This skill stays create-only, so it won't change the project's
+     external link on a resume — surface its current value as-is; to change it
+     later, use the store's `project_update` tool.
    - **Not found** → continue to create it.
 5. **Create the release.**
    `mcp__srm__release_create { project: <project>, version:
@@ -93,9 +94,11 @@ be born.
 
 ## Guardrails
 
-- **Create-only, never edit/delete.** This skill births a project + release; it
-  cannot modify or remove them (no edit/delete tools by design in this release).
-  A re-run resumes an existing release — it never overwrites or duplicates it.
+- **Create-only (this skill).** This skill births a project + release; it does
+  not modify or remove them — a re-run resumes an existing release, never
+  overwriting or duplicating it. Editing a created record later is a separate
+  path: the store's `project_update` / `release_update` tools (deletes remain
+  unsupported).
 - **Probe before you create.** Always `release_get` first. If the release exists,
   resuming is the correct outcome; creating a duplicate is a bug.
 - **The store is the source of truth; the external link is optional.** Never

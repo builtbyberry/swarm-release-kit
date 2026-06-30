@@ -18,8 +18,8 @@ release is seeded.
 ## How it talks to the store
 
 - `mcp__srm__release_get` — confirm the release is seeded (its components are what
-  makes the phase resolve). If it's missing, it must be imported first; there is no
-  store-side "create release" tool.
+  makes the phase resolve). If it's missing, seed it first — `/srm:release-init`
+  (native `release_create`) or a GitHub-milestone import — then retry.
 
 If the MCP server isn't connected, **stop and say so** — the store is the only
 source of truth for whether the release exists; don't proceed from memory.
@@ -35,10 +35,10 @@ current checkout): `repo`, `default_branch`,
    if `.claude/release-config.json` is missing.
 2. **Ensure the release is in the store.** `mcp__srm__release_get { release }`.
    - **Found** → it's seeded; continue.
-   - **Not found** → the milestone must be imported first. Surface that the
-     operator runs `php artisan srm:import-release <repo> <milestone>` on the
-     server (the swarm-releases repo's command), then retry. Stop — do **not**
-     try to create the release from here; import is the only seeding path.
+   - **Not found** → seed the release first, then retry. Native:
+     `/srm:release-init` (`release_create`). GitHub-tracked: import the milestone
+     with `php artisan srm:import-release <repo> <milestone>` on the server. Stop
+     — do **not** seed it from this skill; seeding is `/srm:release-init` or import.
 3. **Preflight (refuse on failure — do not auto-fix).** In order, stop on the
    first failure with a clear message:
    1. Working tree is clean: `git status --porcelain` is empty.
@@ -94,9 +94,10 @@ current checkout): `repo`, `default_branch`,
 
 ## Guardrails
 
-- **Never create the release from here.** If `release_get` comes back empty, the
-  fix is `php artisan srm:import-release <repo> <milestone>` on the server, then
-  retry — not a store write. There is no "create release" tool by design.
+- **Never seed the release from here.** If `release_get` comes back empty, seed it
+  with `/srm:release-init` (native `release_create`) or a GitHub-milestone import
+  (`php artisan srm:import-release <repo> <milestone>`), then retry — this skill
+  does only the git/PR mechanics.
 - Preflight failures are hard stops, not warnings to work around. Don't
   auto-stash, don't reset, don't force-push.
 - If the release branch already exists, stop — don't reuse or overwrite it.
