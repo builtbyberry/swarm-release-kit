@@ -1,6 +1,6 @@
 ---
 name: release-open
-description: "Open a release session against the shared SRM store: confirm the release is seeded, cut the release branch, scaffold the CHANGELOG, and open the draft release PR. Use when the user says /release-open, start release, cut release branch, or let's start <release>."
+description: "Open a release session against the shared SRM store: confirm the release is seeded, cut the release branch, scaffold the CHANGELOG, open the draft release PR, and optionally (on a yes) link a GitHub milestone. Use when the user says /release-open, start release, cut release branch, or let's start <release>."
 ---
 
 # Release Open (SRM)
@@ -20,6 +20,10 @@ release is seeded.
 - `mcp__srm__release_get` — confirm the release is seeded (its components are what
   makes the phase resolve). If it's missing, seed it first — `/srm:release-init`
   (native `release_create`) or a GitHub-milestone import — then retry.
+- `mcp__srm__release_update` — **OPTIONAL, opt-in only**: when the operator says
+  yes (step 9), link the release to a GitHub milestone by passing
+  `milestone_number`; `tracker_url` is derived from the project repo. Never
+  called without an explicit yes.
 
 If the MCP server isn't connected, **stop and say so** — the store is the only
 source of truth for whether the release exists; don't proceed from memory.
@@ -89,8 +93,27 @@ current checkout): `repo`, `default_branch`,
    - [ ] Deploy executed and smoke + monitor passed
    ```
    (In `tag` mode the last item is "Ready for merge + tag" instead.)
-9. **Report.** Print the new branch name, the PR URL, and the next-step hint:
-   `Run /srm:release-graph to verify the dependency graph, then /srm:release-next`.
+9. **Optional — link a GitHub milestone (ASK; never automatic).** The release
+   detail screen's "View milestone in tracker" link is sourced from the release's
+   `tracker_url`; a natively-created release has none until one is linked. **Only
+   if** the project has a GitHub `repo` **and** `release_get` shows no
+   `tracker_url` yet, **ask** the operator: "Link this release to a GitHub
+   milestone? (create a new one / use an existing number / skip)". Default to
+   **skip** — never create or link a milestone without an explicit yes.
+   - **Create new** → `gh api repos/<repo>/milestones -f title="<release-label>"`,
+     capture its `number`, then `mcp__srm__release_update { release,
+     milestone_number: <number> }` (this derives `tracker_url` from the repo).
+     Note: the milestone starts **empty** — native components are store-only, not
+     GitHub issues — so it's a tracker home for the release, not an issue list.
+   - **Existing number** → `mcp__srm__release_update { release, milestone_number:
+     <number> }` only; do not create a milestone.
+   - **Skip** → leave it unlinked; the UI simply omits the link. It can be linked
+     later with the same `release_update` call.
+   If the release is **already linked** (`tracker_url` present), don't ask —
+   report it as-is.
+10. **Report.** Print the new branch name, the PR URL, whether a milestone was
+    linked (or skipped), and the next-step hint: `Run /srm:release-graph to verify
+    the dependency graph, then /srm:release-next`.
 
 ## Guardrails
 
@@ -105,3 +128,6 @@ current checkout): `repo`, `default_branch`,
   PR's URL and continue rather than opening a duplicate.
 - Don't write any "open" state to the store — the `open` phase derives from the
   release having components (ReleasePhaseResolver). This skill only does git/PR.
+- **Milestone linking is opt-in.** Never create a GitHub milestone or call
+  `release_update { milestone_number }` without an explicit yes (step 9). Skip is
+  the default, and an already-linked release is left untouched.

@@ -9,6 +9,17 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Added
+
+- **`/srm:release-open`** now offers — on an explicit yes, never automatically —
+  to link the release to a GitHub milestone (step 9). For a native release with a
+  GitHub repo and no `tracker_url` yet, it asks "create a new milestone / use an
+  existing number / skip" (default skip); on opt-in it creates the milestone via
+  `gh` and/or links it with `release_update { milestone_number }`, which derives
+  `tracker_url` from the project repo so the release-detail "View milestone in
+  tracker" link works. An already-linked release is left untouched. Requires the
+  store's `release_update` tool (milestone_number support).
+
 ## [0.8.0] - 2026-06-30
 
 ### Added
