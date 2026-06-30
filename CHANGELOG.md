@@ -9,6 +9,21 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Added
+
+- **`/srm:release-parallel`** — store-driven parallel subagent dispatch. Reads the
+  startable candidate set from the store (`release_next` / `release_get`, not
+  `release-plan.json`), opens a `dispatch_run` for the wave (`dispatch_open`) and
+  relies on the server-side graph guard to reject dep-unmet members with a
+  per-member reason, claims each admitted member (`claim_component`), materializes
+  a git worktree per component (via `/srm:release-topic --worktree`), and spawns
+  one Claude subagent each that reports semantic progress back to its run member
+  (`dispatch_report`: dispatched → in_progress → proposed → merged / failed).
+  Refuses unless the main checkout is on the active release branch. Resumable: a
+  re-invocation re-attaches to an open `dispatch_run` and reports per-member status
+  instead of re-dispatching. The store-driven counterpart to the GitHub-plan-driven
+  `/release-parallel`. (#54)
+
 ## [0.7.0] - 2026-06-29
 
 First tagged release of the `srm` Claude Code plugin — release coordination for AI
