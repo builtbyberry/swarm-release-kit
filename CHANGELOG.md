@@ -9,6 +9,19 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Added
+
+- **`/srm:release-init`** — bootstrap a project + release directly in the shared
+  store via the new write-path tools (`project_create` / `release_create`), with
+  no GitHub round-trip. The SRM-native counterpart to the GitHub-seeded
+  `/release-init`: resolve-or-create the workspace project (repo optional), create
+  the release from theme / version-or-slug / out_of_scope (`source: native`), and
+  offer an optional, skippable external-tracker link (GitHub/Jira/Linear) — the
+  store stays the source of truth. Idempotent/resumable: re-running against an
+  existing release resumes via `release_get` instead of duplicating. Refuses
+  gracefully on older stores that lack the write-path tools, pointing at
+  `php artisan srm:import-release`. Requires the plan-write-path backend tools.
+
 ## [0.7.0] - 2026-06-29
 
 First tagged release of the `srm` Claude Code plugin — release coordination for AI
