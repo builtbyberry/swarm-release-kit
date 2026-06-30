@@ -118,9 +118,12 @@ running it in Claude: an adaptive sweep, not a form.
 
 4. **Out-of-scope sweep** — ask "anything you considered for this release and
    explicitly cut?" Capture them as a list and read it back. These do not become
-   components; they belong on the release record's out-of-scope (set at
-   `/srm:release-init`). If the user names cuts here, remind them to record them
-   there — this skill only writes components.
+   components; they belong on the release record's `out_of_scope`. If the user
+   names cuts, offer to record them straight onto the release via
+   `release_update { release, out_of_scope: [...] }` (pass the full replacement
+   list — it overwrites, so include any cuts already on the record; confirm
+   before writing). If they decline, leave the record as-is — the cuts can still
+   be set later.
 
 Do not invent components the user didn't mention. If a sweep category returns
 nothing, that's a valid answer — move on.
