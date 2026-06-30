@@ -33,6 +33,18 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
   tracker link. Supports `add` mode to append a single component without
   re-walking the sweep. The GitHub-seeded `/release-plan` stays for repos that
   want issue-tracked planning.
+- **`/srm:release-parallel`** — store-driven parallel subagent dispatch. Reads the
+  startable candidate set from the store (`release_next` / `release_get`, not
+  `release-plan.json`), opens a `dispatch_run` for the wave (`dispatch_open`) and
+  relies on the server-side graph guard to reject dep-unmet members with a
+  per-member reason. Then per admitted member, `/srm:release-topic --worktree` is
+  the single claim owner — it claims the component and materializes a git worktree
+  — and the wave spawns one Claude subagent each that reports semantic progress
+  back to its run member (`dispatch_report`: dispatched → in_progress → proposed →
+  merged / failed). Refuses unless the main checkout is on the active release
+  branch. Resumable: a re-invocation re-attaches to an open `dispatch_run` and
+  reports per-member status instead of re-dispatching. The store-driven counterpart
+  to the GitHub-plan-driven `/release-parallel`. (#54)
 
 ## [0.7.0] - 2026-06-29
 
