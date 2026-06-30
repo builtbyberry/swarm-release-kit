@@ -1,6 +1,6 @@
 ---
 name: release-parallel
-description: "Dispatch parallel work across a release's startable components against the shared SRM store: open a dispatch_run for the wave, claim each member, materialize a worktree per component (via /srm:release-topic --worktree), and spawn one Claude subagent each that reports progress back to the run. Use when the user says /release-parallel, work on these in parallel, dispatch parallel work, start wave <n>, or run several components concurrently."
+description: "Dispatch parallel work across a release's startable components against the shared SRM store: open a dispatch_run for the wave, then for each member let /srm:release-topic --worktree take the claim and materialize a worktree, and spawn one Claude subagent each that reports progress back to the run. Use when the user says /release-parallel, work on these in parallel, dispatch parallel work, start wave <n>, or run several components concurrently."
 ---
 
 # Release Parallel (SRM)
@@ -35,13 +35,16 @@ sit side by side — the run never duplicates drift or re-implements the lock.
   **server-side graph guard** lives here (see below).
 - `mcp__srm__dispatch_report` — a member reports its status
   (`dispatched | in_progress | proposed | merged | failed`) plus an optional
-  last-progress note. One call per meaningful checkpoint.
+  last-progress note. Targets the **member id** (`members[].id` from the run, the
+  dispatch_member ULID — not the component id). One call per meaningful checkpoint.
 - `mcp__srm__dispatch_get` — read a run's per-member status directly (the same
   data `release_get` inlines); the resume + status-board read.
-- `mcp__srm__claim_component` / `mcp__srm__heartbeat_claim` /
-  `mcp__srm__release_claim` — the per-component lock lifecycle, exactly as in
-  `/srm:release-topic`. The wave claims each member so the lock/liveness picture
-  stays accurate alongside the run.
+- `mcp__srm__heartbeat_claim` / `mcp__srm__release_claim` — the per-component lock
+  lifecycle. The wave does **not** claim members itself: each member's claim is
+  taken once by `/srm:release-topic` during per-member setup (it claims, then cuts
+  the branch/worktree), and the subagent heartbeats that claim while it works.
+  `claim_component` throws `claim_conflict` on any live re-claim — even by the same
+  holder — so the claim stays under a single owner.
 
 If the MCP server isn't connected, **stop and say so** — the `dispatch_run` is
 the only place a wave is durable; never drive a fan-out from conversation memory
@@ -82,11 +85,13 @@ On every invocation, `release_get { release }` (or `dispatch_get`) and look for 
   - `merged` / `failed` → terminal; report and leave alone.
   - `proposed` → work landed a PR; report it (merging/wrap is out of scope here).
   - `in_progress` / `dispatched` → still live. Re-attach to the member: confirm
-    its claim is still held (heartbeat; re-claim if `lease_lost`), confirm its
-    worktree exists, and re-spawn its subagent **only if** no live subagent is
-    carrying it. Never re-open the run, never re-`dispatch_open` an
-    already-admitted member, never re-claim a component you already hold beyond
-    the idempotent re-claim.
+    its claim is still held (`heartbeat_claim`; if `lease_lost`, the hold is dead —
+    re-claim via `/srm:release-topic`), confirm its worktree exists, and re-spawn
+    its subagent **only if** no live subagent is carrying it. Never re-open the
+    run, never re-`dispatch_open` an already-admitted member, and never re-claim a
+    component whose claim is still live — `claim_component` throws `claim_conflict`
+    on a live re-claim even for the same holder, so re-claim **only** after a
+    `lease_lost`.
 
 The whole point of the record: a fresh session re-attaches and reports
 `Wave N: 5 dispatched, 3 in progress, 1 proposed, 1 failed` instead of starting
@@ -119,45 +124,40 @@ Resolve the member set:
 
 ### Step 2 — Open the dispatch_run (the graph guard runs here)
 
-`mcp__srm__dispatch_open { release, members: [<component id>, ...] }`. Capture the
-returned **run id** and the per-member verdict. Report admitted vs rejected
-members (rejected ones carry their reason — see the graph-guard section). Proceed
-only with the **admitted** set. The run is now durable; everything below reports
-against it.
+`mcp__srm__dispatch_open { release, components: [<component id>, ...], label? }`.
+Capture the returned **run id** and, for each admitted member, its **member id**
+(`members[].id` — the dispatch_member ULID, distinct from the component id, and
+what every `dispatch_report` below targets) plus the per-member verdict. Report
+admitted vs rejected members (rejected ones carry their reason — see the
+graph-guard section). Proceed only with the **admitted** set. The run is now
+durable; everything below reports against it.
 
-### Step 3 — Claim each admitted member
+### Step 3 — Per member: claim + worktree via release-topic, then spawn a subagent
 
-For each admitted component, `mcp__srm__claim_component { component }`:
+For each admitted member, in parallel:
 
-- **success** → you hold the lock; note the claim `id` + `fence`.
-- **`claim_conflict`** → someone else already holds it (the error names the
-  holder). Do **not** dispatch it; report it via `dispatch_report { run,
-  component, status: failed, note: "claim_conflict: held by <holder>" }` so the
-  board reflects reality, and drop it from the wave.
-
-Claiming the whole admitted set up front keeps the lock/liveness picture accurate
-alongside the run before any subagent spawns.
-
-### Step 4 — Materialize a worktree + spawn a subagent per member
-
-For each claimed member, in parallel:
-
-1. **Worktree.** Materialize the topic worktree via `/srm:release-topic
-   --worktree` for that component — it cuts `<type>/<release>-<ref>-<slug>` from
-   the active release branch as a **sibling git worktree**. The component is
-   already claimed (Step 3), so its claim step is the idempotent re-claim of a
-   hold you own; its real contribution here is the branch + worktree mechanic. Set
-   the work-state once: `mcp__srm__set_component_state { component, state:
-   "in_progress" }`.
-2. **Spawn one Claude subagent** scoped to that worktree (see **The subagent
+1. **Claim + worktree via `/srm:release-topic --worktree`.** This is the *single*
+   place the member is claimed: release-topic claims the component (the
+   cross-machine lock) **and** cuts `<type>/<release>-<ref>-<slug>` from the active
+   release branch as a **sibling git worktree**. The wave never issues its own
+   `claim_component` — a live re-claim throws `claim_conflict` even for the same
+   holder, so one owner takes the lock and that owner is release-topic. Capture the
+   resulting claim `id` + `fence`.
+   - **`claim_conflict`** → someone else already holds it (the error names the
+     holder). Do **not** set it up or spawn it; report it via `dispatch_report {
+     member, status: failed, note: "claim_conflict: held by <holder>" }` so the
+     board reflects reality, and drop it from the wave.
+2. **Mark the work started** once the claim is held: `mcp__srm__set_component_state
+   { component, state: "in_progress" }`.
+3. **Spawn one Claude subagent** scoped to that worktree (see **The subagent
    brief**). Spawn all members' subagents in one batch so they run concurrently —
    this is the parallel dispatch the skill exists for.
-3. Record the transition: `mcp__srm__dispatch_report { run, component, status:
-   dispatched, note: "<branch> @ <worktree path>" }`.
+4. Record the transition: `mcp__srm__dispatch_report { member, status: dispatched,
+   note: "<branch> @ <worktree path>" }`.
 
-### Step 5 — Track the wave
+### Step 4 — Track the wave
 
-The subagents report their own progress to the run (Step 6 of the brief). The
+The subagents report their own progress to the run (item 3 of the brief). The
 orchestrator's job after dispatch is to **track, not to do the work**: poll
 `dispatch_get { run }` (or `release_get`) and render the status board on request.
 Auto-merging / auto-wrapping dispatched work is **out of scope** — this skill
@@ -166,8 +166,9 @@ dispatches and reports; landing each PR is the normal per-component lifecycle.
 ## The subagent brief
 
 Each spawned subagent is scoped to exactly one component and its worktree. Hand
-it: the **component id**, its **worktree path**, its **branch**, the **run id**,
-and its **claim id + fence**. Its standing instructions:
+it: the **component id**, its **member id** (the dispatch_member ULID it reports
+against), its **worktree path**, its **branch**, the **run id**, and its **claim
+id + fence**. Its standing instructions:
 
 1. Work only inside its worktree on its branch; do not touch sibling worktrees or
    the main checkout.
@@ -175,7 +176,7 @@ and its **claim id + fence**. Its standing instructions:
    work. If a heartbeat returns `lease_lost`, **stop** and report `failed` — the
    lock was lost or revoked; do not keep writing.
 3. **Report progress at meaningful checkpoints** via `mcp__srm__dispatch_report {
-   run, component, status, note }`, advancing through the lifecycle:
+   member, status, note }`, advancing through the lifecycle:
    - `in_progress` when it starts (with a one-line plan in `note`),
    - `proposed` when it opens its PR (`note: <PR url>`),
    - `failed` if it can't complete (the `note` carries why — and is the resume
@@ -199,9 +200,14 @@ and its **claim id + fence**. Its standing instructions:
 - **The claim is the lock; the `dispatch_run` is the grouping + progress.** Keep
   them side by side — don't fold drift/liveness into the run or invent a parallel
   lock.
+- **One owner per claim — `/srm:release-topic` claims, the wave does not.** Each
+  member is claimed exactly once, by release-topic during per-member setup; the
+  wave never issues its own `claim_component`. A live re-claim returns
+  `claim_conflict` even for the same holder, so a second claim would fail.
 - **Resumable, not re-runnable.** Re-invoking re-attaches to an open run and
   reports per-member status; it never re-opens the run, re-dispatches an admitted
-  member, or re-claims a hold it owns beyond the idempotent re-claim.
+  member, or re-claims a still-live hold (a live re-claim returns
+  `claim_conflict`; only re-claim after a `lease_lost`).
 - **Dispatch + report only.** No auto-merge, no auto-wrap, no auto-retry of a
   failed member — those are deliberate next steps (`/srm:release-topic`,
   `/srm:release-wrap`), not things the wave does on its own.
