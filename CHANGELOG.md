@@ -9,6 +9,21 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Added
+
+- **`/srm:release-plan`** — SRM-native planning conversation. Runs the
+  structured per-cluster sweep (theme → component sweep by `project_type` →
+  deploy-safety + breaking per component → out-of-scope) and writes each
+  confirmed component straight to the store via `component_create` with a
+  per-component yes/edit/skip loop. Pure-store: files no GitHub issues and writes
+  no `release-plan.json`, so components are live on the release-detail screen and
+  graphable by `/srm:release-graph` the moment they're confirmed. Components land
+  with the same strict shape as the GitHub issue template (title, branch_type,
+  slug, deploy_safety, breaking, notes) plus an optional, skippable external
+  tracker link. Supports `add` mode to append a single component without
+  re-walking the sweep. The GitHub-seeded `/release-plan` stays for repos that
+  want issue-tracked planning.
+
 ## [0.7.0] - 2026-06-29
 
 First tagged release of the `srm` Claude Code plugin — release coordination for AI
