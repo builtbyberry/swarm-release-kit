@@ -11,18 +11,40 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ### Added
 
+- **`/srm:release-init`** — bootstrap a project + release directly in the shared
+  store via the new write-path tools (`project_create` / `release_create`), with
+  no GitHub round-trip. The SRM-native counterpart to the GitHub-seeded
+  `/release-init`: resolve-or-create the workspace project (repo optional), create
+  the release from theme / version-or-slug / out_of_scope (`source: native`), and
+  offer an optional, skippable external-tracker link (GitHub/Jira/Linear) — the
+  store stays the source of truth. Idempotent/resumable: re-running against an
+  existing release resumes via `release_get` instead of duplicating. Refuses
+  gracefully on older stores that lack the write-path tools, pointing at
+  `php artisan srm:import-release`. Requires the plan-write-path backend tools.
+- **`/srm:release-plan`** — SRM-native planning conversation. Runs the
+  structured per-cluster sweep (theme → component sweep by `project_type` →
+  deploy-safety + breaking per component → out-of-scope) and writes each
+  confirmed component straight to the store via `component_create` with a
+  per-component yes/edit/skip loop. Pure-store: files no GitHub issues and writes
+  no `release-plan.json`, so components are live on the release-detail screen and
+  graphable by `/srm:release-graph` the moment they're confirmed. Components land
+  with the same strict shape as the GitHub issue template (title, branch_type,
+  slug, deploy_safety, breaking, notes) plus an optional, skippable external
+  tracker link. Supports `add` mode to append a single component without
+  re-walking the sweep. The GitHub-seeded `/release-plan` stays for repos that
+  want issue-tracked planning.
 - **`/srm:release-parallel`** — store-driven parallel subagent dispatch. Reads the
   startable candidate set from the store (`release_next` / `release_get`, not
   `release-plan.json`), opens a `dispatch_run` for the wave (`dispatch_open`) and
   relies on the server-side graph guard to reject dep-unmet members with a
-  per-member reason, claims each admitted member (`claim_component`), materializes
-  a git worktree per component (via `/srm:release-topic --worktree`), and spawns
-  one Claude subagent each that reports semantic progress back to its run member
-  (`dispatch_report`: dispatched → in_progress → proposed → merged / failed).
-  Refuses unless the main checkout is on the active release branch. Resumable: a
-  re-invocation re-attaches to an open `dispatch_run` and reports per-member status
-  instead of re-dispatching. The store-driven counterpart to the GitHub-plan-driven
-  `/release-parallel`. (#54)
+  per-member reason. Then per admitted member, `/srm:release-topic --worktree` is
+  the single claim owner — it claims the component and materializes a git worktree
+  — and the wave spawns one Claude subagent each that reports semantic progress
+  back to its run member (`dispatch_report`: dispatched → in_progress → proposed →
+  merged / failed). Refuses unless the main checkout is on the active release
+  branch. Resumable: a re-invocation re-attaches to an open `dispatch_run` and
+  reports per-member status instead of re-dispatching. The store-driven counterpart
+  to the GitHub-plan-driven `/release-parallel`. (#54)
 
 ## [0.7.0] - 2026-06-29
 
