@@ -52,6 +52,7 @@ store also powers the web UI and the `srm` CLI — MCP is just the agent surface
 | Surface | What it does |
 | --- | --- |
 | `.mcp.json` | Connects the hosted SRM MCP server (OAuth — self-registers, browser consent). |
+| `skills/release-init` | Born-in-the-store project + release bootstrap via the write-path tools — no GitHub round-trip; external link optional. |
 | `skills/release-next` | Startable work, ranked by what it unblocks (read-only). |
 | `commands/release-status` | `/release-status` — who holds what + drift, at a glance. |
 | `hooks/SessionStart` | Optional CLI readiness ping (silent without the CLI). |
