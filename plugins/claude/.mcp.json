@@ -2,7 +2,7 @@
   "mcpServers": {
     "srm": {
       "type": "http",
-      "url": "${user_config.srm_url}/mcp"
+      "url": "https://release-manager.swarmplatform.cloud/mcp"
     }
   }
 }

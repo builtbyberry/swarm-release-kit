@@ -1,7 +1,7 @@
 {
   "name": "srm",
   "displayName": "Swarm Release Manager (Claude)",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Release coordination for AI coding agents, backed by the hosted Swarm Release Manager store. Connects the SRM MCP server over OAuth so claims, drift, and startability live in one shared store — the same across machines, people, and agents — instead of repo-local JSON.",
   "author": {
     "name": "Daniel Berry",
@@ -16,13 +16,5 @@
     "orchestration",
     "claude-code",
     "srm"
-  ],
-  "userConfig": {
-    "srm_url": {
-      "type": "string",
-      "title": "SRM store URL",
-      "description": "Base URL of your Swarm Release Manager store, e.g. https://srm.yourco.com. The plugin connects its MCP server at <url>/mcp and authenticates via OAuth — you'll approve the connection in your browser and pick a workspace. No token to paste.",
-      "required": true
-    }
-  }
+  ]
 }

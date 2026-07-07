@@ -9,6 +9,21 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+## [0.8.1] - 2026-07-06
+
+### Fixed
+
+- **Plugin connection now works from the "Add connection" UI.** `.mcp.json` used
+  `"url": "${user_config.srm_url}/mcp"`, but Claude Code does not interpolate a
+  `userConfig` value into an HTTP MCP server's `url` field — so the UI showed the
+  literal `${user_config.srm_url}/mcp` and the **Add** button wouldn't proceed.
+  The store URL is now hardcoded to the hosted endpoint
+  `https://release-manager.swarmplatform.cloud/mcp` (matching how the Swarm plugin
+  ships its hosted MCP), and the now-unused `userConfig.srm_url` field was removed
+  from the manifest. SRM is a hosted service — every user connects to the same
+  store over OAuth — so there was no per-user URL to configure. (Self-hosters can
+  still point elsewhere via `claude mcp add --url`.)
+
 ### Added
 
 - **`/srm:release-open`** now offers — on an explicit yes, never automatically —
