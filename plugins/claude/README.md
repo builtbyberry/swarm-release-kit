@@ -14,8 +14,8 @@ codex / cursor adapters will register the same MCP endpoint.
 
 ```
 plugins/claude/
-  .claude-plugin/plugin.json   manifest + userConfig (srm_url, srm_token)
-  .mcp.json                    connects the hosted SRM MCP server (bearer auth)
+  .claude-plugin/plugin.json   manifest (name, version, keywords)
+  .mcp.json                    connects the hosted SRM MCP server (OAuth)
   commands/release-status.md   /release-status — who holds what + drift
   skills/release-next/         startable work, ranked (read-only)
   hooks/hooks.json             SessionStart: optional CLI readiness ping
@@ -26,15 +26,18 @@ The MCP tools appear as `mcp__srm__release_next`,
 `…__release_status`, `…__release_get`, `…__claim_component`,
 `…__heartbeat_claim`, `…__release_claim`, `…__revoke_claim`.
 
-## Config (set when you enable the plugin)
+## Connecting (no config to set)
 
-- **`srm_url`** — base URL of your SRM store; the MCP server connects at `<url>/mcp`.
+The plugin connects the hosted SRM MCP server at
+`https://release-manager.swarmplatform.cloud/mcp` — the URL is built in, there's
+nothing to fill in when you enable it.
 
 Auth is **OAuth 2.1** (authorization-code + PKCE, Dynamic Client Registration):
 the client self-registers, you approve the connection in your browser and pick
 the workspace it may operate in — no token to paste or store. No per-repo opt-in
 is needed; enabling the plugin connects it. (The secondary `srm` CLI authenticates
-with its own bearer token from the environment for human/CI use.)
+with its own bearer token from the environment for human/CI use, and reads its
+store URL from `SRM_URL` — separate from this plugin.)
 
 ## Status
 
