@@ -9,6 +9,8 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+## [0.9.0] - 2026-07-14
+
 ### Added
 
 - **`/release-next` answers across releases.** Several releases in flight is
