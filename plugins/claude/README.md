@@ -7,7 +7,7 @@ and agents.
 
 The agent talks to the store **natively over MCP** — this plugin connects the
 hosted SRM MCP server, and the skills drive its tools. The agent-agnostic `srm`
-CLI (`../../cli/srm`) stays as a secondary path for humans, CI, and hooks.
+CLI (`../../cli/marshall`) stays as a secondary path for humans, CI, and hooks.
 codex / cursor adapters will register the same MCP endpoint.
 
 ## What's here

@@ -7,8 +7,8 @@ import { DEFAULT_URL } from './oauth.js';
  * Resolve how this CLI talks to the SRM store.
  *
  * The token is a secret and never comes from a tracked file. It comes from
- * `srm login` (stored 0600 outside any repo, see credentials.js) or, for the
- * non-interactive case, `SRM_TOKEN`. The env wins: a CI job or a one-off against
+ * `marshall login` (stored 0600 outside any repo, see credentials.js) or, for the
+ * non-interactive case, `MARSHALL_TOKEN`. The env wins: a CI job or a one-off against
  * another store must not be silently overridden by whoever last logged in here.
  *
  * The rest (which project this repo maps to) is lifted from the repo's tracked
@@ -20,7 +20,7 @@ import { DEFAULT_URL } from './oauth.js';
  *     "project": "swarm-release-manager"
  *   }
  *
- * `url` falls back to the hosted store, so a fresh install can `srm login` with
+ * `url` falls back to the hosted store, so a fresh install can `marshall login` with
  * nothing configured — the same call the plugin made in 0.8.1 when it hardcoded
  * its MCP url. `state.url` still wins for a self-hosted store.
  *
@@ -32,13 +32,34 @@ export function resolveConfig({ cwd = process.cwd(), env = process.env, override
     const stored = readCredentials(env);
 
     return {
-        backend: env.SRM_BACKEND ?? state.backend ?? 'local-json',
-        url: env.SRM_URL ?? state.url ?? stored?.url ?? DEFAULT_URL,
-        token: env.SRM_TOKEN ?? stored?.access_token ?? null,
+        backend: pick(env, 'BACKEND') ?? state.backend ?? 'local-json',
+        url: pick(env, 'URL') ?? state.url ?? stored?.url ?? DEFAULT_URL,
+        token: pick(env, 'TOKEN') ?? stored?.access_token ?? null,
         // An explicit --project beats both, so the "pass --project" that
         // resolveRelease suggests on an ambiguous version is actually actionable.
-        project: overrides.project ?? env.SRM_PROJECT ?? state.project ?? null,
+        project: overrides.project ?? pick(env, 'PROJECT') ?? state.project ?? null,
     };
+}
+
+/**
+ * Read `MARSHALL_<name>`, falling back to the older `SRM_<name>`.
+ *
+ * The binary is `marshall`, so `MARSHALL_TOKEN` is the name a user would guess —
+ * being told to set `SRM_TOKEN` by a command called `marshall` is a puzzle, not a
+ * hint. `SRM_*` keeps working rather than breaking anyone mid-flight; it is the
+ * fallback, not the primary, so the new name wins when both are set.
+ *
+ * Note this is only the ENV surface. `state.backend` in a repo's
+ * release-config.json stays the literal string "srm" — that value lives in other
+ * repos' tracked files, and renaming it would break every repo that already
+ * opted in to gain nothing.
+ *
+ * @param {NodeJS.ProcessEnv} env
+ * @param {string} name
+ * @returns {string|undefined}
+ */
+function pick(env, name) {
+    return env[`MARSHALL_${name}`] ?? env[`SRM_${name}`];
 }
 
 /**
@@ -78,7 +99,7 @@ function readState(cwd) {
  * message naming the missing piece otherwise.
  *
  * The backend gate stays: it is what keeps the session-start hook silent in repos
- * that never opted into SRM (the hook reads a non-zero `srm me` as "say nothing").
+ * that never opted into SRM (the hook reads a non-zero `marshall me` as "say nothing").
  * Dropping it would make the hook greet every repo on the machine.
  *
  * @param {{ backend: string, url: string|null, token: string|null }} config
@@ -91,9 +112,9 @@ export function requireSrm(config) {
         );
     }
     if (!config.url) {
-        throw new Error('No SRM store URL. Set state.url in release-config.json or SRM_URL.');
+        throw new Error('No store URL. Set state.url in release-config.json or MARSHALL_URL.');
     }
     if (!config.token) {
-        throw new Error('Not signed in. Run `srm login` (or set SRM_TOKEN for non-interactive use).');
+        throw new Error('Not signed in. Run `marshall login` (or set MARSHALL_TOKEN for non-interactive use).');
     }
 }

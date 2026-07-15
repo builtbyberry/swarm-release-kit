@@ -28,7 +28,7 @@ when you enabled the plugin). Use its tools directly:
 - `mcp__srm__release_get` — the full release document
 
 If those tools aren't available (the MCP server isn't connected), fall back to
-the `srm` CLI: `srm next --release <version> --json`. Same data, secondary path
+the `marshall` CLI: `marshall next --release <version> --json`. Same data, secondary path
 — but it is **per-release only**, with no cross-release scan, so on that path you
 do have to ask the user which release.
 

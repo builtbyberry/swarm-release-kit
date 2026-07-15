@@ -1,6 +1,6 @@
 name: cli
 
-# cli/srm ships to npm as @builtbyberry/srm-cli and carries a real test suite —
+# cli/marshall ships to npm as @builtbyberry/marshall-cli and carries a real test suite —
 # but nothing ran it. `npm test` was wired only to `prepublishOnly`, so the tests
 # fired at publish time, which is where you learn about a regression far too late
 # to do anything cheap about it. Run them on every change instead.
@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         # 18 is the floor the package actually PROMISES (package.json `engines`
-        # and cli/srm/README.md both say Node >= 18), and nothing has ever checked
+        # and cli/marshall/README.md both say Node >= 18), and nothing has ever checked
         # that promise. Testing only current LTS would leave it unverified while
         # published installs on 18 keep succeeding.
         node: ['18', '20', '22']
@@ -35,4 +35,4 @@ jobs:
       # a package-lock.json. Add one here the day a dependency lands.
       - name: Test
         run: npm test
-        working-directory: cli/srm
+        working-directory: cli/marshall
