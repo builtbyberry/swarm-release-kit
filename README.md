@@ -21,8 +21,11 @@ swarm-release-kit/
     cursor/                         (later)
 ```
 
-Every host plugin is a thin wrapper that shells out to the same `srm` CLI, so
-behavior is identical everywhere and the API contract lives in one place.
+Host plugins drive the store's **MCP tools** directly; the `srm` CLI is the
+separate human/CI path to the same REST store. (This once read "every host plugin
+is a thin wrapper that shells out to the `srm` CLI" — that stopped being true when
+the agent surface moved to MCP, and the next section has described the MCP path
+for several releases.)
 
 ## Install (Claude Code)
 
@@ -35,10 +38,12 @@ Enabling the plugin connects the hosted SRM MCP server at
 `https://release-manager.swarmplatform.cloud/mcp` (built in — nothing to fill in)
 and authenticates over **OAuth** — you approve the connection in your browser and
 pick a workspace, no token to paste. (The client self-registers via OAuth Dynamic
-Client Registration.) Optionally install the core CLI for human/CI use:
+Client Registration.) Optionally install the CLI, the human path to the same
+store — it signs in the same way, over OAuth in your browser:
 
 ```
 npm install -g @builtbyberry/srm-cli
+srm login
 ```
 
 ## How the agent reaches the store

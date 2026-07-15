@@ -33,12 +33,17 @@ function safeJson(data) {
 /**
  * Make a JSON request to the SRM store with no third-party dependencies.
  *
+ * `body` is sent as JSON. `form` is sent as application/x-www-form-urlencoded —
+ * OAuth 2.0 (RFC 6749 §4.1.3) specifies form encoding for the token endpoint, so
+ * `/oauth/token` gets `form` while the store's own REST surface gets `body`.
+ * Passing both is a caller bug; `form` wins.
+ *
  * @param {'GET'|'POST'} method
  * @param {string} urlString
- * @param {{ token?: string, body?: object }} [options]
+ * @param {{ token?: string, body?: object, form?: Record<string, string> }} [options]
  * @returns {Promise<{ status: number, json: any }>}
  */
-export function request(method, urlString, { token, body } = {}) {
+export function request(method, urlString, { token, body, form } = {}) {
     return new Promise((resolve, reject) => {
         let url;
         try {
@@ -50,7 +55,8 @@ export function request(method, urlString, { token, body } = {}) {
         }
 
         const lib = url.protocol === 'http:' ? http : https;
-        const payload = body ? JSON.stringify(body) : null;
+        const payload = form ? new URLSearchParams(form).toString() : body ? JSON.stringify(body) : null;
+        const contentType = form ? 'application/x-www-form-urlencoded' : 'application/json';
 
         const req = lib.request(
             url,
@@ -61,7 +67,7 @@ export function request(method, urlString, { token, body } = {}) {
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     ...(payload
                         ? {
-                              'Content-Type': 'application/json',
+                              'Content-Type': contentType,
                               'Content-Length': Buffer.byteLength(payload),
                           }
                         : {}),
