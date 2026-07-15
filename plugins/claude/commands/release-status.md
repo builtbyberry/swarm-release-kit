@@ -25,6 +25,9 @@ Read-only. This never claims, releases, or mutates anything.
    - `startable` — the count still ready to pick up.
    - If the MCP server isn't connected, fall back to `srm status --release $ARGUMENTS`.
 3. On a tool error, surface it verbatim (`release_not_found`, auth/connection).
-   Don't paper over it.
+   Don't paper over it. On `release_ambiguous` the version matched more than one
+   release: its `candidates[]` name each one's `project` + `slug`, so retry with
+   `project` set to a candidate's project and `release` set to its slug — that
+   pair is unique. Retrying the same bare version just repeats the error.
 
 For *what to start next* (ranked by what it unblocks), use `/release-next`.
