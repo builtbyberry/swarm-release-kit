@@ -1,0 +1,38 @@
+name: cli
+
+# cli/srm ships to npm as @builtbyberry/srm-cli and carries a real test suite —
+# but nothing ran it. `npm test` was wired only to `prepublishOnly`, so the tests
+# fired at publish time, which is where you learn about a regression far too late
+# to do anything cheap about it. Run them on every change instead.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Report every version's result, not just the first to fail — "18 breaks,
+      # 20 and 22 are fine" is a different problem from "everything is broken".
+      fail-fast: false
+      matrix:
+        # 18 is the floor the package actually PROMISES (package.json `engines`
+        # and cli/srm/README.md both say Node >= 18), and nothing has ever checked
+        # that promise. Testing only current LTS would leave it unverified while
+        # published installs on 18 keep succeeding.
+        node: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No install step on purpose: zero runtime dependencies and no lockfile, so
+      # there is nothing to restore — and `npm ci` would fail outright for want of
+      # a package-lock.json. Add one here the day a dependency lands.
+      - name: Test
+        run: npm test
+        working-directory: cli/srm
