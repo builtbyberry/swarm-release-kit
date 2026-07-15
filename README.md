@@ -7,14 +7,14 @@ store — so **claims, drift, and startability are the same across machines,
 people, and agents**.
 
 Agents talk to the store **natively over MCP**; each host plugin just connects
-the same hosted MCP endpoint. The `srm` CLI is the secondary path for humans/CI.
+the same hosted MCP endpoint. The `marshall` CLI is the secondary path for humans.
 
 This is a **monorepo**: one agent-agnostic core, one plugin per agent host.
 
 ```
 swarm-release-kit/
   .claude-plugin/marketplace.json   the marketplace that lists the host plugins
-  cli/srm/                          shared core — the `srm` client (npm: @builtbyberry/srm-cli)
+  cli/marshall/                     the `marshall` client (npm: @builtbyberry/marshall-cli)
   plugins/
     claude/                         Claude Code host adapter        ← shipping
     codex/                          (later)
@@ -42,8 +42,8 @@ Client Registration.) Optionally install the CLI, the human path to the same
 store — it signs in the same way, over OAuth in your browser:
 
 ```
-npm install -g @builtbyberry/srm-cli
-srm login
+npm install -g @builtbyberry/marshall-cli
+marshall login
 ```
 
 ## How the agent reaches the store
@@ -65,6 +65,6 @@ store also powers the web UI and the `srm` CLI — MCP is just the agent surface
 ## Develop
 
 ```
-cd cli/srm && npm test                  # the shared core (node --test)
+cd cli/marshall && npm test             # the CLI (node --test)
 claude plugin validate ./plugins/claude # the Claude plugin
 ```

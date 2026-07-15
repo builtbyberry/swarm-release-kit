@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 /**
- * Where `srm login` parks its OAuth tokens.
+ * Where `marshall login` parks its OAuth tokens.
  *
  * A file, not the keychain: the CLI has zero dependencies and must stay that way
  * (no native keytar binding), and the store's tokens are short-lived — 15 days,
@@ -11,14 +11,16 @@ import { dirname, join } from 'node:path';
  * written 0600 and lives OUTSIDE any repo, so it can never be committed the way
  * a token pasted into release-config.json could.
  *
- * `SRM_CONFIG_HOME` overrides the location — tests set it to a temp dir so they
- * never touch a real developer's credentials.
+ * `MARSHALL_CONFIG_HOME` (or the older `SRM_CONFIG_HOME`) overrides the location
+ * — tests set it to a temp dir so they never touch a real developer's
+ * credentials.
  *
  * @param {NodeJS.ProcessEnv} [env]
  * @returns {string}
  */
 export function credentialsPath(env = process.env) {
-    const base = env.SRM_CONFIG_HOME ?? (env.XDG_CONFIG_HOME ? join(env.XDG_CONFIG_HOME, 'srm') : join(homedir(), '.config', 'srm'));
+    const override = env.MARSHALL_CONFIG_HOME ?? env.SRM_CONFIG_HOME;
+    const base = override ?? (env.XDG_CONFIG_HOME ? join(env.XDG_CONFIG_HOME, 'marshall') : join(homedir(), '.config', 'marshall'));
 
     return join(base, 'credentials.json');
 }
@@ -27,7 +29,7 @@ export function credentialsPath(env = process.env) {
  * The stored credentials, or null when not logged in / unreadable.
  *
  * Unreadable is deliberately the same as absent: a corrupt file should send you
- * to `srm login`, not crash a read-only command with a JSON parse error.
+ * to `marshall login`, not crash a read-only command with a JSON parse error.
  *
  * @param {NodeJS.ProcessEnv} [env]
  * @returns {{ url: string, client_id: string, access_token: string, refresh_token?: string|null, expires_at?: number|null }|null}

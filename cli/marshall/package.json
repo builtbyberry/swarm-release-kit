@@ -1,10 +1,10 @@
 {
-    "name": "@builtbyberry/srm-cli",
-    "version": "0.2.0",
-    "description": "The Swarm Release Manager client: the human path to the shared SRM store — what's startable, who holds what, and what drifted.",
+    "name": "@builtbyberry/marshall-cli",
+    "version": "0.3.0",
+    "description": "The Marshall client: the human path to the shared Marshall release store \u2014 what's startable, who holds what, and what drifted.",
     "type": "module",
     "bin": {
-        "srm": "bin/srm.js"
+        "marshall": "bin/marshall.js"
     },
     "files": [
         "bin",
@@ -21,12 +21,12 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/builtbyberry/swarm-release-kit.git",
-        "directory": "cli/srm"
+        "directory": "cli/marshall"
     },
     "keywords": [
+        "marshall",
         "swarm",
         "release",
-        "srm",
         "claude-code",
         "cli"
     ],
@@ -34,5 +34,5 @@
         "access": "public"
     },
     "license": "MIT",
-    "homepage": "https://github.com/builtbyberry/swarm-release-kit/tree/main/cli/srm"
+    "homepage": "https://github.com/builtbyberry/swarm-release-kit/tree/main/cli/marshall"
 }

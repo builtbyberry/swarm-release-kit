@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
  * touches rather than through imported functions.
  */
 
-const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'srm.js');
+const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'marshall.js');
 
 /** @type {http.Server[]} */
 const servers = [];
@@ -88,11 +88,11 @@ function srm(args, env) {
     return { child, output: () => out, exit: new Promise((r) => child.on('exit', r)) };
 }
 
-test('srm login: registers, survives no browser, exchanges with PKCE, and stores 0600 tokens', async () => {
+test('marshall login: registers, survives no browser, exchanges with PKCE, and stores 0600 tokens', async () => {
     const { url, seen } = await fakeStore();
-    const home = mkdtempSync(join(tmpdir(), 'srm-login-'));
+    const home = mkdtempSync(join(tmpdir(), 'marshall-login-'));
 
-    const proc = srm(['login'], { SRM_URL: url, SRM_CONFIG_HOME: home });
+    const proc = srm(['login'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
 
     // Act as the browser: the URL is printed before the opener is attempted, so a
     // box with no xdg-open still completes the flow by hand.
@@ -132,11 +132,11 @@ test('srm login: registers, survives no browser, exchanges with PKCE, and stores
     assert.equal(statSync(path).mode & 0o777, 0o600);
 });
 
-test('srm me: reads the stored login and prints the user + workspaces', async () => {
+test('marshall me: reads the stored login and prints the user + workspaces', async () => {
     const { url } = await fakeStore();
-    const home = mkdtempSync(join(tmpdir(), 'srm-me-'));
+    const home = mkdtempSync(join(tmpdir(), 'marshall-me-'));
 
-    const login = srm(['login'], { SRM_URL: url, SRM_CONFIG_HOME: home });
+    const login = srm(['login'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
     const authorize = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('no authorize URL')), 8000);
         const poll = setInterval(() => {
@@ -152,20 +152,20 @@ test('srm me: reads the stored login and prints the user + workspaces', async ()
     await fetch(`${redirect.origin}/callback?code=c&state=${encodeURIComponent(authorize.searchParams.get('state'))}`);
     await login.exit;
 
-    // No SRM_TOKEN: the token has to come from the login that just happened.
-    const me = srm(['me'], { SRM_URL: url, SRM_CONFIG_HOME: home, SRM_BACKEND: 'srm' });
+    // No MARSHALL_TOKEN: the token has to come from the login that just happened.
+    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home, MARSHALL_BACKEND: 'srm' });
 
     assert.equal(await me.exit, 0);
     assert.match(me.output(), /Daniel Berry <dan@example\.test>/);
     assert.match(me.output(), /Acme \(acme\)/);
 });
 
-test('srm me: says how to fix it when not signed in', async () => {
+test('marshall me: says how to fix it when not signed in', async () => {
     const { url } = await fakeStore();
-    const home = mkdtempSync(join(tmpdir(), 'srm-anon-'));
+    const home = mkdtempSync(join(tmpdir(), 'marshall-anon-'));
 
-    const me = srm(['me'], { SRM_URL: url, SRM_CONFIG_HOME: home, SRM_BACKEND: 'srm' });
+    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home, MARSHALL_BACKEND: 'srm' });
 
     assert.notEqual(await me.exit, 0);
-    assert.match(me.output(), /srm login/);
+    assert.match(me.output(), /marshall login/);
 });

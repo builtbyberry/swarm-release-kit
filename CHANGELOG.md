@@ -20,10 +20,18 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ### Note
 
-- `@builtbyberry/srm-cli` gained `srm login` (browser OAuth + PKCE) and is now
-  publishable — it had never been published, so the README's install line pointed
-  at a 404. The CLI versions independently of this plugin (`cli-v*` tags); see
-  [RELEASING.md](RELEASING.md).
+- **The CLI is now `@builtbyberry/marshall-cli`, and its binary is `marshall`.**
+  It gained `marshall login` (browser OAuth + PKCE) — it had never been published
+  at all, so the README's install line pointed at a 404. Renamed to the product
+  name while it had no users; `@builtbyberry/srm-cli` (0.2.0, published briefly
+  today) is deprecated and points here. The skills' CLI fallback now says
+  `marshall next` / `marshall status`.
+  `MARSHALL_URL`/`_TOKEN`/`_PROJECT` are the env vars; `SRM_*` still work.
+  The plugin's own `srm` identifiers are UNCHANGED — the plugin is still `srm`,
+  the skills are still `/srm:*`, and the MCP tools are still `mcp__srm__*`, per
+  the rebrand decision that the Marshall client is a clean-slate new plugin
+  rather than a breaking in-place rename. The CLI versions independently of this
+  plugin (`cli-v*` tags); see [RELEASING.md](RELEASING.md).
 
 ## [0.9.0] - 2026-07-14
 

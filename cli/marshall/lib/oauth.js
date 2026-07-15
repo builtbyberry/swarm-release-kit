@@ -53,7 +53,7 @@ export function pkce() {
  */
 export async function registerClient(url, redirectUri) {
     const { json } = await request('POST', `${url}/oauth/register`, {
-        body: { client_name: 'srm CLI', redirect_uris: [redirectUri] },
+        body: { client_name: 'Marshall CLI', redirect_uris: [redirectUri] },
     });
 
     if (!json?.client_id) {
@@ -160,7 +160,7 @@ export function loopbackServer(onRequest) {
                 // Drop lingering sockets, THEN close. close() alone only stops
                 // accepting and waits on open connections — and a browser holds
                 // this one open with keep-alive, so the handle would never free
-                // and `srm login` would print "Signed in" and then hang forever
+                // and `marshall login` would print "Signed in" and then hang forever
                 // instead of exiting. (Node >= 18.2; optional-called so an older
                 // 18.x still closes, just less promptly.)
                 server.closeAllConnections?.();
@@ -175,7 +175,7 @@ export function loopbackServer(onRequest) {
     });
 }
 
-const page = (ok, message) => `<!doctype html><meta charset="utf-8"><title>srm</title>
+const page = (ok, message) => `<!doctype html><meta charset="utf-8"><title>marshall</title>
 <body style="font:16px/1.5 system-ui;margin:4rem auto;max-width:30rem;text-align:center">
 <h1 style="font-size:1.25rem">${ok ? 'Signed in to Swarm Release Manager' : 'Sign-in failed'}</h1>
 <p style="color:#555">${message}</p>

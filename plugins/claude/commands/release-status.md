@@ -23,7 +23,7 @@ Read-only. This never claims, releases, or mutates anything.
    - `drifting` — dropped holds that reopened. Call these out; they're the thing
      most likely to surprise a teammate.
    - `startable` — the count still ready to pick up.
-   - If the MCP server isn't connected, fall back to `srm status --release $ARGUMENTS`.
+   - If the MCP server isn't connected, fall back to `marshall status --release $ARGUMENTS`.
 3. On a tool error, surface it verbatim (`release_not_found`, auth/connection).
    Don't paper over it. On `release_ambiguous` the version matched more than one
    release: its `candidates[]` name each one's `project` + `slug`, so retry with

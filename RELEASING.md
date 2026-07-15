@@ -6,7 +6,7 @@ together and must not share a tag prefix:
 | Artifact | Version lives in | Tag | Released by |
 | --- | --- | --- | --- |
 | Claude plugin | `plugins/claude/.claude-plugin/plugin.json` + `CHANGELOG.md` heading | `vX.Y.Z` | the steps below |
-| `@builtbyberry/srm-cli` | `cli/srm/package.json` | `cli-vX.Y.Z` | [CLI releases](#cli-releases) |
+| `@builtbyberry/marshall-cli` | `cli/marshall/package.json` | `cli-vX.Y.Z` | [CLI releases](#cli-releases) |
 
 The plugin is 0.9.x while the CLI is 0.2.x — that is expected, not drift. Bumping
 one because the other moved is the mistake.
@@ -78,12 +78,12 @@ and the drift is back.
 
 ## CLI releases
 
-`@builtbyberry/srm-cli` publishes to npm from a `cli-v*` tag — the tag IS the
+`@builtbyberry/marshall-cli` publishes to npm from a `cli-v*` tag — the tag IS the
 release, so there is no manual `npm publish` from a laptop. (A hand-published
 package is how you get a version no tag points at, which is exactly the plugin's
 0.8.1 story with an npm tarball attached.)
 
-1. Bump `cli/srm/package.json` `version` per SemVer.
+1. Bump `cli/marshall/package.json` `version` per SemVer.
 2. Commit: `chore(release): cli-vX.Y.Z`.
 3. Tag and push:
 
@@ -99,5 +99,5 @@ are its only two strings and publish time is the only moment they can be checked
 
 Requires an `NPM_TOKEN` repo secret (an npm automation token with publish rights
 on the `@builtbyberry` scope). Provenance additionally needs
-`cli/srm/package.json`'s `repository.url` to point at THIS repo — npm attests the
+`cli/marshall/package.json`'s `repository.url` to point at THIS repo — npm attests the
 tarball against the workflow's repo, so a stale URL fails the publish outright.

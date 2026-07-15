@@ -12,11 +12,11 @@ import { drifting, held, me, resolveRelease, startable } from '../lib/store.js';
  * to for their primary path.)
  *
  * Usage:
- *   srm login                      sign in via the browser (OAuth + PKCE)
- *   srm logout                     forget the stored tokens
- *   srm me                         who this token authenticates as
- *   srm next   --release <version> startable work, ranked (read-only)
- *   srm status --release <version> who holds what + drift (read-only)
+ *   marshall login                 sign in via the browser (OAuth + PKCE)
+ *   marshall logout                forget the stored tokens
+ *   marshall me                    who this token authenticates as
+ *   marshall next   --release <ver> startable work, ranked (read-only)
+ *   marshall status --release <ver> who holds what + drift (read-only)
  *
  * Output is JSON when --json is passed (for a host to parse), human text else.
  */
@@ -323,7 +323,7 @@ function emitJson(value) {
 function printUsage() {
     process.stdout.write(
         [
-            'srm — Swarm Release Manager client',
+            'marshall — the Marshall release client',
             '',
             'Commands:',
             '  login                       sign in via the browser (OAuth + PKCE)',
@@ -337,7 +337,8 @@ function printUsage() {
             '  --json                    machine-readable output',
             '',
             'Config: state.backend/url/project in .claude/release-config.json;',
-            'token from SRM_TOKEN. SRM_URL/SRM_PROJECT override.',
+            'token from `marshall login`. MARSHALL_URL/_TOKEN/_PROJECT override',
+            '(SRM_* still honoured).',
             '',
         ].join('\n'),
     );

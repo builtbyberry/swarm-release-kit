@@ -1,6 +1,6 @@
 name: cli publish
 
-# Publish @builtbyberry/srm-cli to npm from a `cli-v*` tag.
+# Publish @builtbyberry/marshall-cli to npm from a `cli-v*` tag.
 #
 # Tag-driven, like the plugin: the tag IS the release. A manual `npm publish` from
 # a laptop is how the plugin's 0.8.1 shipped untagged, and there is no reason to
@@ -39,11 +39,11 @@ jobs:
           # that ships a different number is worse. This is the same rule the
           # plugin's release-coherence check enforces, at the only moment it can
           # be enforced for a package that has no changelog to cross-check.
-          MANIFEST="$(node -p "require('./cli/srm/package.json').version")"
+          MANIFEST="$(node -p "require('./cli/marshall/package.json').version")"
           EXPECTED="cli-v${MANIFEST}"
 
           if [ "$TAG" != "$EXPECTED" ]; then
-            echo "::error::Tag ${TAG} does not match cli/srm/package.json (${MANIFEST}). Expected ${EXPECTED}."
+            echo "::error::Tag ${TAG} does not match cli/marshall/package.json (${MANIFEST}). Expected ${EXPECTED}."
             echo "Bump the manifest and re-tag, or tag the version you meant to ship."
             exit 1
           fi
@@ -52,12 +52,12 @@ jobs:
 
       - name: Test before publishing
         run: npm test
-        working-directory: cli/srm
+        working-directory: cli/marshall
 
       - name: Publish
         # --provenance links the tarball to this commit + workflow on npm.
         # No install step: zero dependencies and no lockfile (see cli.yml).
         run: npm publish --provenance --access public
-        working-directory: cli/srm
+        working-directory: cli/marshall
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

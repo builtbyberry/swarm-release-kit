@@ -5,13 +5,19 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { clearCredentials, credentialsPath, readCredentials, writeCredentials } from '../lib/credentials.js';
 
-/** A throwaway SRM_CONFIG_HOME, so a test can never touch real credentials. */
-const sandbox = () => ({ SRM_CONFIG_HOME: mkdtempSync(join(tmpdir(), 'srm-cred-')) });
+/** A throwaway MARSHALL_CONFIG_HOME, so a test can never touch real credentials. */
+const sandbox = () => ({ MARSHALL_CONFIG_HOME: mkdtempSync(join(tmpdir(), 'marshall-cred-')) });
 
-test('credentialsPath() honours SRM_CONFIG_HOME, then XDG, then ~/.config', () => {
-    assert.equal(credentialsPath({ SRM_CONFIG_HOME: '/a' }), '/a/credentials.json');
-    assert.equal(credentialsPath({ XDG_CONFIG_HOME: '/b' }), '/b/srm/credentials.json');
-    assert.match(credentialsPath({}), /\.config\/srm\/credentials\.json$/);
+test('credentialsPath() honours MARSHALL_CONFIG_HOME, then XDG, then ~/.config', () => {
+    assert.equal(credentialsPath({ MARSHALL_CONFIG_HOME: '/a' }), '/a/credentials.json');
+    assert.equal(credentialsPath({ XDG_CONFIG_HOME: '/b' }), '/b/marshall/credentials.json');
+    assert.match(credentialsPath({}), /\.config\/marshall\/credentials\.json$/);
+});
+
+test('credentialsPath() still honours the older SRM_CONFIG_HOME, but MARSHALL_ wins', () => {
+    // The rename must not strand anyone mid-flight who already exported SRM_*.
+    assert.equal(credentialsPath({ SRM_CONFIG_HOME: '/old' }), '/old/credentials.json');
+    assert.equal(credentialsPath({ SRM_CONFIG_HOME: '/old', MARSHALL_CONFIG_HOME: '/new' }), '/new/credentials.json');
 });
 
 test('writeCredentials() stores 0600 — the file holds a bearer token', () => {
