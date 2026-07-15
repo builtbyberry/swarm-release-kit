@@ -30,6 +30,11 @@ marshall status --release <ver>    who holds what + drift (read-only)
 Add `--json` for machine-readable output, or `--project <slug>` when a version
 exists in more than one project.
 
+Commands work anywhere once you are signed in — you sign in to a *store*, not to
+a repo. (`marshall me --require-repo` is the exception, and exists for the
+session-start hook: it fails unless the current repo opts into Marshall, which is
+how the hook stays silent in repos that have nothing to do with it.)
+
 ## Signing in
 
 `marshall login` registers itself with the store as a public OAuth client, opens your
@@ -62,9 +67,10 @@ Resolved per repo, with env overrides:
 | project   | `state.project`                         | `MARSHALL_PROJECT` |
 | token     | `marshall login` (never a tracked file)      | `MARSHALL_TOKEN`   |
 
-Store commands only run when `backend` is `srm`, so the CLI stays quiet in repos
-that never opted in. `marshall login` is exempt — you sign in to a *store*, not to a
-repo, so it works from anywhere.
+`backend` is only consulted by `marshall me --require-repo` (the hook's gate).
+Everything else just needs a store and a credential, so a fresh install works
+from any directory. The value stays the literal `"srm"` — it lives in repos'
+tracked config files, so renaming it would break every repo already opted in.
 
 `MARSHALL_CONFIG_HOME` relocates the credentials file (the test suite points it at a
 temp dir so it never touches real credentials).

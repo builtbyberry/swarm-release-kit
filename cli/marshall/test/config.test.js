@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { requireSrm, resolveConfig } from '../lib/config.js';
+import { requireRepoOptIn, requireStore, resolveConfig } from '../lib/config.js';
 import { writeCredentials } from '../lib/credentials.js';
 import { DEFAULT_URL } from '../lib/oauth.js';
 
@@ -62,12 +62,20 @@ test('env overrides the config and supplies the token', () => {
     assert.equal(config.token, 'secret');
 });
 
-test('requireSrm refuses a non-srm backend and missing token', () => {
-    assert.throws(() => requireSrm({ backend: 'local-json', url: null, token: null }), /opt into/);
-    assert.throws(
-        () => requireSrm({ backend: 'srm', url: 'https://x', token: null }),
-        /marshall login/,
-    );
+test('requireStore asks nothing about the repo — only whether we can reach the store', () => {
+    // The whole first-run fix: standing in an unrelated directory is not an error.
+    // A human who has signed in can ask who they are from anywhere.
+    assert.doesNotThrow(() => requireStore({ backend: 'local-json', url: 'https://x', token: 't' }));
+
+    assert.throws(() => requireStore({ url: null, token: 't' }), /No store URL/);
+    // The not-signed-in message must name the fix — it is the first thing a new
+    // install hits.
+    assert.throws(() => requireStore({ url: 'https://x', token: null }), /marshall login/);
+});
+
+test("requireRepoOptIn is the hook's gate, and says Marshall not SRM", () => {
+    assert.throws(() => requireRepoOptIn({ backend: 'local-json' }), /does not use Marshall/);
+    assert.doesNotThrow(() => requireRepoOptIn({ backend: 'srm' }));
 });
 
 test('a stored login supplies the token', () => {

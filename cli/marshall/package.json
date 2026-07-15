@@ -1,6 +1,6 @@
 {
     "name": "@builtbyberry/marshall-cli",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "The Marshall client: the human path to the shared Marshall release store \u2014 what's startable, who holds what, and what drifted.",
     "type": "module",
     "bin": {
