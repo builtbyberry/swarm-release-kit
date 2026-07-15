@@ -1,0 +1,57 @@
+name: release coherence
+
+# The manifest, the newest dated CHANGELOG heading, and the git tag are one
+# string (RELEASING.md). Nothing checked that, and it drifted twice — most
+# recently 0.8.1, which was bumped inside a fix PR and so never reached the tag
+# step, shipping untagged for nine days until it was spotted by accident.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  coherence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history + tags: the check reads the manifest/CHANGELOG at the
+          # base ref and compares the tag list, so a shallow clone blinds it.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve base
+        id: base
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          # A version introduced by THIS diff has no tag yet — a release commit
+          # earns its tag, so requiring one there would fail the very commit that
+          # creates it. Passing a base exempts exactly what the diff introduces;
+          # the next PR introduces nothing and demands the tag strictly. That one
+          # PR of lag is what turns an untagged release into a red build.
+          if [ "$EVENT" = "pull_request" ]; then
+            echo "ref=$PR_BASE" >> "$GITHUB_OUTPUT"
+          elif [ -z "$PUSH_BEFORE" ] || [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # No previous commit to diff (first push / force). Fall back to the
+            # strict audit: every released version must already be tagged.
+            echo "ref=" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$PUSH_BEFORE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check release coherence
+        env:
+          BASE: ${{ steps.base.outputs.ref }}
+        run: |
+          if [ -n "$BASE" ]; then
+            node scripts/check-release-coherence.mjs --base "$BASE"
+          else
+            node scripts/check-release-coherence.mjs
+          fi
