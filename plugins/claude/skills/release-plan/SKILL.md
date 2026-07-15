@@ -196,7 +196,10 @@ For each component, **one at a time** — no batch-create:
    on the release-detail screen. On error, **surface it verbatim** and stop —
    e.g. a validation failure (bad `branch_type`/`deploy_safety` value), a
    workspace-scope/`release_not_found` error, or a duplicate slug. Do not paper
-   over it or retry blindly.
+   over it or retry blindly. `release_ambiguous` is the one error with a
+   mechanical fix: the version matched several releases, so retry with `project`
+   set to a candidate's project and `release` set to its slug (`candidates[]`
+   lists both). Retrying the same bare version just repeats it.
 
 File each confirmed component with its own `component_create` call as you go —
 **never** collect them and batch-create at the end. Each one gets its own `yes`.

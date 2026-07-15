@@ -9,6 +9,38 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Added
+
+- **`/release-next` answers across releases.** Several releases in flight is
+  normal — claims are held per *component*, so teammates on different releases
+  never contend — but the skill always required a release and asked when the user
+  hadn't named one. It now scopes the question to whatever the user actually gave:
+  a named release (`{ release }`), a project (`{ project }`), or **nothing at all**
+  (`{}` → every unshipped release in the workspace), which is the cross-release
+  "what should I work on" inbox. Each recommendation carries the release it belongs
+  to, since a cross-release list is useless if you can't tell what belongs where.
+  Requires the store's widened `release_next` (`release` is now optional); the
+  `srm` CLI fallback stays per-release, so on that path the skill still asks.
+  The skill also now documents the response it reads (`startable[]` with per-item
+  `release` + `unblocks`, `blocked_summary`, `releases[]`, `scope`), uses
+  `releases[]` to say *which* release is stuck when nothing is startable, and
+  flags that cross-release `unblocks` ranking is a proxy — each count comes from
+  its own release's graph, so it should be weighed against what's near shipping
+  rather than followed blindly.
+
+### Fixed
+
+- **`release_ambiguous` is now handled rather than dead-ended.** The store's
+  release lookup used to report `release_not_found` when a version matched more
+  than one release — a lie about releases that exist, and nothing an agent could
+  act on. It now returns `release_ambiguous` with `candidates[]` naming each
+  release's `project` + `slug`. `/release-next`, `/release-status`, and
+  `/release-plan` document the mechanical retry: pass `project` **and** the
+  candidate's `slug` (that pair is unique), never the same bare version again.
+- **`/release-next` no longer claims `/srm:release-parallel` is unavailable.** It
+  told users concurrent dispatch was "planned, not yet available"; the skill has
+  shipped, so the hand-off now points at it.
+
 ## [0.8.1] - 2026-07-06
 
 ### Fixed
