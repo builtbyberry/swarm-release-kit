@@ -153,7 +153,7 @@ test('marshall me: reads the stored login and prints the user + workspaces', asy
     await login.exit;
 
     // No MARSHALL_TOKEN: the token has to come from the login that just happened.
-    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home, MARSHALL_BACKEND: 'srm' });
+    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
 
     assert.equal(await me.exit, 0);
     assert.match(me.output(), /Daniel Berry <dan@example\.test>/);
@@ -164,8 +164,62 @@ test('marshall me: says how to fix it when not signed in', async () => {
     const { url } = await fakeStore();
     const home = mkdtempSync(join(tmpdir(), 'marshall-anon-'));
 
-    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home, MARSHALL_BACKEND: 'srm' });
+    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
 
     assert.notEqual(await me.exit, 0);
     assert.match(me.output(), /marshall login/);
 });
+
+test('marshall me: works in a plain directory — the actual first run', async () => {
+    const { url } = await fakeStore();
+    const home = mkdtempSync(join(tmpdir(), 'marshall-first-'));
+
+    // No release-config.json anywhere and no MARSHALL_BACKEND: exactly the state
+    // of a machine after `npm i -g` + `marshall login`. This used to fail with a
+    // lecture about a config file the user had never heard of, naming a backend
+    // called "srm" at that.
+    await signIn(url, home);
+    const me = srm(['me'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
+
+    assert.equal(await me.exit, 0);
+    assert.match(me.output(), /Daniel Berry/);
+});
+
+test('marshall me --require-repo: the hook can still be silenced', async () => {
+    const { url } = await fakeStore();
+    const home = mkdtempSync(join(tmpdir(), 'marshall-hook-'));
+
+    await signIn(url, home);
+
+    // Signed in, but this repo does not use Marshall. The hook reads non-zero as
+    // "say nothing" — without the flag it would now greet every repo on the box,
+    // because `me` no longer gates on the repo by itself.
+    const gated = srm(['me', '--require-repo'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
+    assert.notEqual(await gated.exit, 0);
+    assert.match(gated.output(), /does not use Marshall/);
+
+    // ...and it does greet once the repo opts in.
+    const opted = srm(['me', '--require-repo'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home, MARSHALL_BACKEND: 'srm' });
+    assert.equal(await opted.exit, 0);
+    assert.match(opted.output(), /Daniel Berry/);
+});
+
+/** Drive a full browser-less login so a test can act as a signed-in user. */
+async function signIn(url, home) {
+    const login = srm(['login'], { MARSHALL_URL: url, MARSHALL_CONFIG_HOME: home });
+    const authorize = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error(`no authorize URL:\n${login.output()}`)), 8000);
+        const poll = setInterval(() => {
+            const match = login.output().match(/(http:\/\/127\.0\.0\.1:\d+\/oauth\/authorize\?\S+)/);
+            if (match) {
+                clearInterval(poll);
+                clearTimeout(timeout);
+                resolve(new URL(match[1]));
+            }
+        }, 25);
+    });
+    const redirect = new URL(authorize.searchParams.get('redirect_uri'));
+    await fetch(`${redirect.origin}/callback?code=c&state=${encodeURIComponent(authorize.searchParams.get('state'))}`);
+    await login.exit;
+}
+

@@ -95,26 +95,52 @@ function readState(cwd) {
 }
 
 /**
- * Assert the config is complete enough to reach the store; throw a friendly
- * message naming the missing piece otherwise.
+ * Assert we can reach the store: a URL and a credential. Nothing about the repo.
  *
- * The backend gate stays: it is what keeps the session-start hook silent in repos
- * that never opted into SRM (the hook reads a non-zero `marshall me` as "say nothing").
- * Dropping it would make the hook greet every repo on the machine.
+ * This used to also demand `state.backend === "srm"`, which conflated two
+ * unrelated questions — "can I reach the store?" and "does THIS REPO use
+ * Marshall?" — and answered both with one error. The result was the worst
+ * possible first run: install the CLI, sign in, type `marshall me`, and get told
+ * about a `release-config.json` you have never heard of, for a backend named
+ * after the product's old name. Identity is a property of your TOKEN, not of the
+ * directory you happen to be standing in.
  *
- * @param {{ backend: string, url: string|null, token: string|null }} config
+ * The repo question still exists and still matters — but only to the
+ * session-start hook, which now asks it explicitly via
+ * {@see requireRepoOptIn}.
+ *
+ * @param {{ url: string|null, token: string|null }} config
  */
-export function requireSrm(config) {
-    if (config.backend !== 'srm') {
-        throw new Error(
-            "This repo's release-config.json does not opt into the SRM backend " +
-                '(state.backend is not "srm"). Nothing to do.',
-        );
-    }
+export function requireStore(config) {
     if (!config.url) {
         throw new Error('No store URL. Set state.url in release-config.json or MARSHALL_URL.');
     }
     if (!config.token) {
         throw new Error('Not signed in. Run `marshall login` (or set MARSHALL_TOKEN for non-interactive use).');
+    }
+}
+
+/**
+ * Assert this REPO opted into the Marshall store (`state.backend === "srm"` in
+ * its release-config.json).
+ *
+ * Only the session-start hook wants this, via `marshall me --require-repo`: it
+ * reads a non-zero exit as "say nothing", which is what keeps it silent in every
+ * repo on the machine that has nothing to do with Marshall. Making it a flag the
+ * hook opts INTO — rather than a gate every human trips over — is the whole
+ * point: the strict caller asks for strictness, and the default path stays
+ * friendly.
+ *
+ * The value is still the literal "srm", not "marshall": it lives in other repos'
+ * tracked config files, so renaming it would break every repo already opted in.
+ *
+ * @param {{ backend: string }} config
+ */
+export function requireRepoOptIn(config) {
+    if (config.backend !== 'srm') {
+        throw new Error(
+            "This repo does not use Marshall (no `state.backend: \"srm\"` in its " +
+                '.claude/release-config.json). Nothing to do.',
+        );
     }
 }

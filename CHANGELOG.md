@@ -11,6 +11,15 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ### Fixed
 
+- **The session-start hook now asks for its gate explicitly** (`marshall me
+  --require-repo`) and greets you as **Marshall**, not "Swarm Release Manager".
+  The gate used to be implicit — `marshall me` itself refused unless the repo had
+  `state.backend: "srm"` — which made the CLI's first run baffling: install, sign
+  in, ask who you are, get lectured about a `release-config.json` you have never
+  seen, naming a backend called "srm". Identity is a property of your token, not
+  of the directory you are standing in. Hook behaviour is unchanged: still silent
+  unless the CLI is on PATH *and* the repo opts in.
+
 - **The session-start hook stopped reading a mechanism that no longer exists.** It
   exported `CLAUDE_PLUGIN_OPTION_SRM_URL` / `_TOKEN` into the `srm` subprocess, but
   0.8.1 removed the manifest's `userConfig` block when the MCP url was hardcoded —

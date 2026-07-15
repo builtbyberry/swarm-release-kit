@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { HttpError } from '../lib/http.js';
-import { requireSrm, resolveConfig } from '../lib/config.js';
+import { requireRepoOptIn, requireStore, resolveConfig } from '../lib/config.js';
 import { clearCredentials, credentialsPath, writeCredentials } from '../lib/credentials.js';
 import { authorizeUrl, exchangeCode, loopbackServer, newState, pkce, registerClient } from '../lib/oauth.js';
 import { drifting, held, me, resolveRelease, startable } from '../lib/store.js';
@@ -56,9 +56,9 @@ async function main(argv) {
  * Sign in: register a public client, bounce the human through the browser, and
  * trade the code for tokens.
  *
- * Deliberately does NOT call requireSrm — you log in to the store, not to a repo.
- * Gating this on `state.backend === "srm"` would make signing in impossible from
- * anywhere except an already-configured repo, which is backwards.
+ * Deliberately does NOT require a repo — you log in to the store, not to a repo.
+ * Gating this on `state.backend` would make signing in impossible from anywhere
+ * except an already-configured repo, which is backwards.
  *
  * @param {ReturnType<typeof resolveConfig>} config
  * @param {{ json?: boolean }} args
@@ -166,7 +166,14 @@ function openBrowser(url) {
  * @param {{ json?: boolean }} args
  */
 async function cmdMe(config, args) {
-    requireSrm(config);
+    // --require-repo is for the session-start hook, which reads a non-zero exit as
+    // "this repo has nothing to do with Marshall, say nothing". A human asking who
+    // they are should never be told about a config file they have not heard of.
+    if (args['require-repo']) {
+        requireRepoOptIn(config);
+    }
+
+    requireStore(config);
     const who = await me(config);
 
     if (args.json) {
@@ -193,7 +200,7 @@ async function cmdMe(config, args) {
  * @param {{ release?: string, json?: boolean }} args
  */
 async function cmdNext(config, args) {
-    requireSrm(config);
+    requireStore(config);
     if (!args.release) {
         throw new Error('Pass --release <version> (e.g. --release v0.1.0).');
     }
@@ -233,7 +240,7 @@ async function cmdNext(config, args) {
  * @param {{ release?: string, json?: boolean }} args
  */
 async function cmdStatus(config, args) {
-    requireSrm(config);
+    requireStore(config);
     if (!args.release) {
         throw new Error('Pass --release <version> (e.g. --release v0.1.0).');
     }
@@ -334,6 +341,7 @@ function printUsage() {
             '',
             'Flags:',
             '  --project <slug>          disambiguate a version across projects',
+            '  --require-repo            (me) fail unless this repo uses Marshall — for hooks',
             '  --json                    machine-readable output',
             '',
             'Config: state.backend/url/project in .claude/release-config.json;',
