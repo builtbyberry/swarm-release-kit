@@ -3,18 +3,19 @@
 # into the SRM backend (state.backend = "srm" in release-config.json). For every
 # other repo this stays completely silent, so it never nags non-SRM projects.
 #
-# The token is the plugin's keychain-backed userConfig value, exposed to this
-# subprocess as CLAUDE_PLUGIN_OPTION_SRM_TOKEN. URL + project come from the
-# repo's release-config.json, which the `srm` CLI resolves itself.
+# The CLI resolves everything itself: the store URL and project from the repo's
+# release-config.json (falling back to the hosted store), and the token from
+# `srm login` or SRM_TOKEN. This hook passes nothing in.
+#
+# It used to export CLAUDE_PLUGIN_OPTION_SRM_URL / _TOKEN, but 0.8.1 removed the
+# manifest's `userConfig` block when the MCP url was hardcoded, so those variables
+# have been unset ever since — the exports were reading a mechanism that no longer
+# exists and always resolved to empty.
 set -uo pipefail
 
 # The agent talks to SRM over MCP; this hook is just an optional readiness ping
 # via the secondary CLI. No CLI on PATH → say nothing.
 command -v srm >/dev/null 2>&1 || exit 0
-
-export SRM_URL="${CLAUDE_PLUGIN_OPTION_SRM_URL:-${SRM_URL:-}}"
-# The CLI's own bearer (a Passport token) comes from the environment when used.
-export SRM_TOKEN="${SRM_TOKEN:-}"
 
 # `srm me` fails loud (non-zero) when the repo hasn't opted in, the token is
 # missing, or the store is unreachable — in all those cases we emit nothing.

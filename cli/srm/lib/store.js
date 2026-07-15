@@ -6,13 +6,21 @@ import { request } from './http.js';
  */
 
 /**
+ * Who this token authenticates as, and which workspaces they belong to.
+ *
+ * NOT unwrapped from `data`, unlike every other call here. `/api/me` is a plain
+ * route closure returning an array, so it serializes as `{user, workspaces}` —
+ * only the Eloquent-Resource endpoints (`/api/releases`, `/api/releases/{id}`)
+ * get the `data` envelope. Reading `json.data` here yields undefined and then a
+ * TypeError one line later in the caller.
+ *
  * @param {{ url: string, token: string }} config
- * @returns {Promise<any>}
+ * @returns {Promise<{ user: { name: string, email: string }, workspaces: Array<{ slug: string, name: string }> }>}
  */
 export async function me(config) {
     const { json } = await request('GET', `${config.url}/api/me`, { token: config.token });
 
-    return json.data;
+    return json;
 }
 
 /**

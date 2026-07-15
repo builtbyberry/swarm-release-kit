@@ -1,16 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { readCredentials } from './credentials.js';
+import { DEFAULT_URL } from './oauth.js';
 
 /**
  * Resolve how this CLI talks to the SRM store.
  *
- * The token is a secret and comes ONLY from the environment (`SRM_TOKEN`) —
- * never from a committed file. Everything else (store URL, which project/release
- * this repo maps to) is lifted from the project's tracked `release-config.json`
- * `state` block, with env overrides for ad-hoc use.
+ * The token is a secret and never comes from a tracked file. It comes from
+ * `srm login` (stored 0600 outside any repo, see credentials.js) or, for the
+ * non-interactive case, `SRM_TOKEN`. The env wins: a CI job or a one-off against
+ * another store must not be silently overridden by whoever last logged in here.
  *
- * Shape of the `state` block (config is `local-json` by default — the kit only
- * talks to SRM when a repo opts in):
+ * The rest (which project this repo maps to) is lifted from the repo's tracked
+ * `release-config.json` `state` block, with env overrides for ad-hoc use:
  *
  *   "state": {
  *     "backend": "srm",
@@ -18,17 +20,24 @@ import { dirname, join } from 'node:path';
  *     "project": "swarm-release-manager"
  *   }
  *
- * @param {{ cwd?: string, env?: NodeJS.ProcessEnv }} [opts]
- * @returns {{ backend: string, url: string|null, token: string|null, project: string|null }}
+ * `url` falls back to the hosted store, so a fresh install can `srm login` with
+ * nothing configured — the same call the plugin made in 0.8.1 when it hardcoded
+ * its MCP url. `state.url` still wins for a self-hosted store.
+ *
+ * @param {{ cwd?: string, env?: NodeJS.ProcessEnv, overrides?: { project?: string|null } }} [opts]
+ * @returns {{ backend: string, url: string, token: string|null, project: string|null }}
  */
-export function resolveConfig({ cwd = process.cwd(), env = process.env } = {}) {
+export function resolveConfig({ cwd = process.cwd(), env = process.env, overrides = {} } = {}) {
     const state = readState(cwd);
+    const stored = readCredentials(env);
 
     return {
         backend: env.SRM_BACKEND ?? state.backend ?? 'local-json',
-        url: env.SRM_URL ?? state.url ?? null,
-        token: env.SRM_TOKEN ?? null,
-        project: env.SRM_PROJECT ?? state.project ?? null,
+        url: env.SRM_URL ?? state.url ?? stored?.url ?? DEFAULT_URL,
+        token: env.SRM_TOKEN ?? stored?.access_token ?? null,
+        // An explicit --project beats both, so the "pass --project" that
+        // resolveRelease suggests on an ambiguous version is actually actionable.
+        project: overrides.project ?? env.SRM_PROJECT ?? state.project ?? null,
     };
 }
 
@@ -68,6 +77,10 @@ function readState(cwd) {
  * Assert the config is complete enough to reach the store; throw a friendly
  * message naming the missing piece otherwise.
  *
+ * The backend gate stays: it is what keeps the session-start hook silent in repos
+ * that never opted into SRM (the hook reads a non-zero `srm me` as "say nothing").
+ * Dropping it would make the hook greet every repo on the machine.
+ *
  * @param {{ backend: string, url: string|null, token: string|null }} config
  */
 export function requireSrm(config) {
@@ -81,6 +94,6 @@ export function requireSrm(config) {
         throw new Error('No SRM store URL. Set state.url in release-config.json or SRM_URL.');
     }
     if (!config.token) {
-        throw new Error('No SRM token. Set SRM_TOKEN in your environment.');
+        throw new Error('Not signed in. Run `srm login` (or set SRM_TOKEN for non-interactive use).');
     }
 }

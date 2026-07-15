@@ -9,6 +9,22 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Fixed
+
+- **The session-start hook stopped reading a mechanism that no longer exists.** It
+  exported `CLAUDE_PLUGIN_OPTION_SRM_URL` / `_TOKEN` into the `srm` subprocess, but
+  0.8.1 removed the manifest's `userConfig` block when the MCP url was hardcoded —
+  so both have resolved to empty ever since. The CLI resolves its own url and token
+  anyway, so the exports are gone. No behaviour change: the hook stays silent
+  unless `srm` is on PATH and the repo opted into the SRM backend.
+
+### Note
+
+- `@builtbyberry/srm-cli` gained `srm login` (browser OAuth + PKCE) and is now
+  publishable — it had never been published, so the README's install line pointed
+  at a 404. The CLI versions independently of this plugin (`cli-v*` tags); see
+  [RELEASING.md](RELEASING.md).
+
 ## [0.9.0] - 2026-07-14
 
 ### Added
