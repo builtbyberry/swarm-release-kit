@@ -1,19 +1,24 @@
 {
-  "name": "swarm-release-kit",
-  "metadata": {
-    "description": "Swarm Release Manager — release coordination plugins backed by the hosted SRM store. One plugin per agent host; all share the srm CLI core in this repo.",
-    "version": "0.1.0"
-  },
-  "owner": {
-    "name": "Daniel Berry",
-    "email": "danielberrytn@gmail.com"
-  },
-  "plugins": [
-    {
-      "name": "srm",
-      "source": "./plugins/claude",
-      "description": "Claude Code host adapter for the Swarm Release Manager store.",
-      "keywords": ["swarm", "release", "claude-code", "srm"]
-    }
-  ]
+    "name": "swarm-release-kit",
+    "metadata": {
+        "description": "DEPRECATED \u2014 superseded by Marshall (builtbyberry/marshall-claude-plugin). Release coordination plugins backed by the hosted store. No longer developed.",
+        "version": "0.1.0"
+    },
+    "owner": {
+        "name": "Daniel Berry",
+        "email": "danielberrytn@gmail.com"
+    },
+    "plugins": [
+        {
+            "name": "srm",
+            "source": "./plugins/claude",
+            "description": "DEPRECATED \u2014 use marshall@marshall instead. Claude Code host adapter for the release store.",
+            "keywords": [
+                "swarm",
+                "release",
+                "claude-code",
+                "srm"
+            ]
+        }
+    ]
 }

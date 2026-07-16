@@ -7,9 +7,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 See [RELEASING.md](RELEASING.md) for how versions are cut.
 
-## Unreleased
+## [0.9.1] - 2026-07-16
+
+### Deprecated
+
+- **This plugin is superseded by [Marshall](https://github.com/builtbyberry/marshall-claude-plugin)
+  and is no longer developed.** It still works against the same hosted store —
+  nothing is being switched off — and this release exists to make sure the way out
+  is not broken.
+
+  ```
+  /plugin marketplace add builtbyberry/marshall-claude-plugin
+  /plugin install marshall@marshall
+  ```
+
+  Nothing in your repo changes. In particular **`state.backend` stays the literal
+  `"srm"`** — that value lives in *your* tracked config and the tooling matches on
+  it, so renaming it to `"marshall"` silently stops recognising every repo already
+  opted in. The skills move `/srm:*` → `/marshall:*`, the MCP tools re-prefix
+  client-side to `mcp__plugin_marshall_marshall__*` because the connection is named
+  `marshall`, and `php artisan srm:import-release` keeps its name (it is the hosted
+  app's command, not this plugin's). The MCP server itself is unchanged — that is
+  why Marshall is a clean-slate plugin and not a breaking rename of this one.
+
+  See [README](README.md#migrating) for the migration in full.
 
 ### Fixed
+
+- **`/release-status`'s CLI fallback was blocked by its own permission line.** The
+  command declared `allowed-tools: Bash(srm *)` while step 2 invokes `marshall
+  status --release …`. `Bash(srm *)` permits a command starting `srm ` and nothing
+  else, so the documented fallback — the thing you reach for precisely when the
+  MCP server is *not* connected — asked for permission every time instead of just
+  running. Now declares `Bash(marshall *)`.
+
+  The binary was renamed to `marshall` at `cli-v0.3.0` and the fallback line was
+  updated with it; the allowlist was not. Two strings that had to move together,
+  one of which nothing checked — the same shape as the manifest/CHANGELOG/tag
+  drift this repo's own release-coherence check now exists to catch.
 
 - **The session-start hook now asks for its gate explicitly** (`marshall me
   --require-repo`) and greets you as **Marshall**, not "Swarm Release Manager".
@@ -39,8 +74,9 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
   The plugin's own `srm` identifiers are UNCHANGED — the plugin is still `srm`,
   the skills are still `/srm:*`, and the MCP tools are still `mcp__srm__*`, per
   the rebrand decision that the Marshall client is a clean-slate new plugin
-  rather than a breaking in-place rename. The CLI versions independently of this
-  plugin (`cli-v*` tags); see [RELEASING.md](RELEASING.md).
+  rather than a breaking in-place rename. The CLI has since moved to
+  [builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli) and
+  versions there on `v*` tags; this repo no longer publishes it.
 
 ## [0.9.0] - 2026-07-14
 

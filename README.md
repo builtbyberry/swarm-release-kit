@@ -1,4 +1,43 @@
-# Swarm Release Kit
+# Swarm Release Kit — deprecated, superseded by Marshall
+
+> ### → [builtbyberry/marshall-claude-plugin](https://github.com/builtbyberry/marshall-claude-plugin)
+>
+> ```
+> /plugin marketplace add builtbyberry/marshall-claude-plugin
+> /plugin install marshall@marshall
+> ```
+>
+> This repo is no longer developed. The `srm` plugin here still works against the
+> same hosted store — nothing is being switched off — but new work happens in
+> Marshall.
+
+## Migrating
+
+The store is the same store. The server did not change, and neither does
+anything in your repo. Four things are worth knowing, because three of them
+routinely get "tidied" into breakage:
+
+1. **`state.backend` in `.claude/release-config.json` stays the literal `"srm"`.**
+   Do not change it. That value lives in *your* repo, and the tooling matches on
+   it — renaming it to `"marshall"` silently stops recognising every repo already
+   opted in. It is an identifier you hold, not a product name we print.
+2. **The skills move from `/srm:*` to `/marshall:*`.** Same skills, same
+   lifecycle.
+3. **The MCP tools re-prefix client-side**, from `mcp__srm__*` to
+   `mcp__plugin_marshall_marshall__*`, because the connection is named `marshall`.
+   The hosted MCP server is unchanged — this is why Marshall is a clean-slate
+   plugin rather than a breaking in-place rename of this one.
+4. **`php artisan srm:import-release` keeps its name.** It is a command in the
+   hosted app, not this plugin's to rename.
+
+The `marshall` CLI is unaffected and needs no migration — same
+`@builtbyberry/marshall-cli` package, same binary. It now lives at
+[builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli).
+**Upgrade to 0.5.0 or newer if you use it**: 0.4.0 and older show a retired
+product name after `marshall login` and their README points at MCP tools that no
+host exposes.
+
+---
 
 Release coordination for AI coding agents, backed by the hosted **Swarm Release
 Manager (SRM)** store. It lifts release-planning state out of repo-local,
