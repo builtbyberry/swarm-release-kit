@@ -1,7 +1,7 @@
 ---
 description: Show who holds what and what drifted in a release, from the shared SRM store.
 argument-hint: "[release-version]"
-allowed-tools: Bash(srm *)
+allowed-tools: Bash(marshall *)
 ---
 
 # Release Status (SRM)

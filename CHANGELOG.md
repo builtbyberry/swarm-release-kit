@@ -11,6 +11,18 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ### Fixed
 
+- **`/release-status`'s CLI fallback was blocked by its own permission line.** The
+  command declared `allowed-tools: Bash(srm *)` while step 2 invokes `marshall
+  status --release …`. `Bash(srm *)` permits a command starting `srm ` and nothing
+  else, so the documented fallback — the thing you reach for precisely when the
+  MCP server is *not* connected — asked for permission every time instead of just
+  running. Now declares `Bash(marshall *)`.
+
+  The binary was renamed to `marshall` at `cli-v0.3.0` and the fallback line was
+  updated with it; the allowlist was not. Two strings that had to move together,
+  one of which nothing checked — the same shape as the manifest/CHANGELOG/tag
+  drift this repo's own release-coherence check now exists to catch.
+
 - **The session-start hook now asks for its gate explicitly** (`marshall me
   --require-repo`) and greets you as **Marshall**, not "Swarm Release Manager".
   The gate used to be implicit — `marshall me` itself refused unless the repo had
