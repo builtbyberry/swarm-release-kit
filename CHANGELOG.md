@@ -9,6 +9,29 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
 
 ## Unreleased
 
+### Deprecated
+
+- **This plugin is superseded by [Marshall](https://github.com/builtbyberry/marshall-claude-plugin)
+  and is no longer developed.** It still works against the same hosted store —
+  nothing is being switched off — and this release exists to make sure the way out
+  is not broken.
+
+  ```
+  /plugin marketplace add builtbyberry/marshall-claude-plugin
+  /plugin install marshall@marshall
+  ```
+
+  Nothing in your repo changes. In particular **`state.backend` stays the literal
+  `"srm"`** — that value lives in *your* tracked config and the tooling matches on
+  it, so renaming it to `"marshall"` silently stops recognising every repo already
+  opted in. The skills move `/srm:*` → `/marshall:*`, the MCP tools re-prefix
+  client-side to `mcp__plugin_marshall_marshall__*` because the connection is named
+  `marshall`, and `php artisan srm:import-release` keeps its name (it is the hosted
+  app's command, not this plugin's). The MCP server itself is unchanged — that is
+  why Marshall is a clean-slate plugin and not a breaking rename of this one.
+
+  See [README](README.md#migrating) for the migration in full.
+
 ### Fixed
 
 - **`/release-status`'s CLI fallback was blocked by its own permission line.** The
@@ -51,8 +74,9 @@ See [RELEASING.md](RELEASING.md) for how versions are cut.
   The plugin's own `srm` identifiers are UNCHANGED — the plugin is still `srm`,
   the skills are still `/srm:*`, and the MCP tools are still `mcp__srm__*`, per
   the rebrand decision that the Marshall client is a clean-slate new plugin
-  rather than a breaking in-place rename. The CLI versions independently of this
-  plugin (`cli-v*` tags); see [RELEASING.md](RELEASING.md).
+  rather than a breaking in-place rename. The CLI has since moved to
+  [builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli) and
+  versions there on `v*` tags; this repo no longer publishes it.
 
 ## [0.9.0] - 2026-07-14
 
