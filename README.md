@@ -9,17 +9,22 @@ people, and agents**.
 Agents talk to the store **natively over MCP**; each host plugin just connects
 the same hosted MCP endpoint. The `marshall` CLI is the secondary path for humans.
 
-This is a **monorepo**: one agent-agnostic core, one plugin per agent host.
-
 ```
 swarm-release-kit/
   .claude-plugin/marketplace.json   the marketplace that lists the host plugins
-  cli/marshall/                     the `marshall` client (npm: @builtbyberry/marshall-cli)
+  cli/marshall/                     moved → github.com/builtbyberry/marshall-cli
   plugins/
     claude/                         Claude Code host adapter        ← shipping
     codex/                          (later)
     cursor/                         (later)
 ```
+
+This was a **monorepo**: one agent-agnostic core plus one plugin per agent host.
+The core — the `marshall` CLI — now lives at
+[builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli), because
+it is agent-agnostic and this repo is organised per host. `cli/marshall/` is a
+signpost now, kept because npm's published metadata for older CLI versions links
+to that path and cannot be changed.
 
 Host plugins drive the store's **MCP tools** directly; the `srm` CLI is the
 separate human/CI path to the same REST store. (This once read "every host plugin
@@ -65,6 +70,8 @@ store also powers the web UI and the `srm` CLI — MCP is just the agent surface
 ## Develop
 
 ```
-cd cli/marshall && npm test             # the CLI (node --test)
 claude plugin validate ./plugins/claude # the Claude plugin
 ```
+
+The CLI's tests moved with it — run them in
+[builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli).

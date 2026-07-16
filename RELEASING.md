@@ -1,15 +1,23 @@
 # Releasing
 
-This repo ships **two independently versioned artifacts**. They do not move
-together and must not share a tag prefix:
+This repo ships **one artifact**: the Claude plugin.
 
 | Artifact | Version lives in | Tag | Released by |
 | --- | --- | --- | --- |
 | Claude plugin | `plugins/claude/.claude-plugin/plugin.json` + `CHANGELOG.md` heading | `vX.Y.Z` | the steps below |
-| `@builtbyberry/marshall-cli` | `cli/marshall/package.json` | `cli-vX.Y.Z` | [CLI releases](#cli-releases) |
 
-The plugin is 0.9.x while the CLI is 0.2.x — that is expected, not drift. Bumping
-one because the other moved is the mistake.
+`@builtbyberry/marshall-cli` **used to** release from here on a `cli-v*` tag. It
+now releases from
+[builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli) on a
+plain `v*` tag, and this repo can no longer publish it — `cli-publish.yml` is
+gone, so a `cli-v*` tag here does nothing.
+
+That is why the `cli-` prefix existed at all: `v*` was the plugin's, and a shared
+prefix would have made every plugin release try to publish the CLI. With one
+artifact per repo, neither needs a qualifier — but note the consequence, because
+it points a loaded gun at this repo's own history: **the `v*` tags here
+(`v0.7.0` … `v0.9.0`) are the plugin's, and they now match marshall-cli's publish
+trigger.** Never push this repo's tags to that one.
 
 ## The plugin
 
@@ -78,26 +86,17 @@ and the drift is back.
 
 ## CLI releases
 
-`@builtbyberry/marshall-cli` publishes to npm from a `cli-v*` tag — the tag IS the
-release, so there is no manual `npm publish` from a laptop. (A hand-published
-package is how you get a version no tag points at, which is exactly the plugin's
-0.8.1 story with an npm tarball attached.)
+**Moved.** `@builtbyberry/marshall-cli` releases from
+[builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli); see
+that repo's `.github/workflows/publish.yml`. Nothing here publishes it.
 
-1. Bump `cli/marshall/package.json` `version` per SemVer.
-2. Commit: `chore(release): cli-vX.Y.Z`.
-3. Tag and push:
+Two things that were true here and are **not** true there, so this section is not
+a stale map of the new home:
 
-   ```sh
-   git tag -a cli-vX.Y.Z -m "cli-vX.Y.Z — <one-line summary>"
-   git push origin main cli-vX.Y.Z
-   ```
-
-`.github/workflows/cli-publish.yml` then verifies the tag matches the manifest,
-runs the tests, and publishes with npm provenance. **It refuses to publish on a
-mismatch** — the CLI has no changelog to cross-check, so the tag and the manifest
-are its only two strings and publish time is the only moment they can be checked.
-
-Requires an `NPM_TOKEN` repo secret (an npm automation token with publish rights
-on the `@builtbyberry` scope). Provenance additionally needs
-`cli/marshall/package.json`'s `repository.url` to point at THIS repo — npm attests the
-tarball against the workflow's repo, so a stale URL fails the publish outright.
+- **No `NPM_TOKEN`.** It publishes via npm trusted publishing (OIDC), so there is
+  no secret to hold. This repo's `NPM_TOKEN` secret is now dead weight with live
+  publish rights on the `@builtbyberry` scope — delete it.
+- **`repository.url` points at the NEW repo.** npm attests the tarball against
+  the repo whose workflow built it, so it must name marshall-cli. The note that
+  used to live here said "point at THIS repo", which is exactly wrong now and is
+  the reason it is rewritten rather than left.
