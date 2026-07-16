@@ -6,9 +6,10 @@ store, so claims, drift, and startability are the same across machines, people,
 and agents.
 
 The agent talks to the store **natively over MCP** — this plugin connects the
-hosted SRM MCP server, and the skills drive its tools. The agent-agnostic `srm`
-CLI (`../../cli/marshall`) stays as a secondary path for humans, CI, and hooks.
-codex / cursor adapters will register the same MCP endpoint.
+hosted SRM MCP server, and the skills drive its tools. The agent-agnostic
+`marshall` CLI ([builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli),
+npm: `@builtbyberry/marshall-cli`) stays as a secondary path for humans, CI, and
+hooks. codex / cursor adapters will register the same MCP endpoint.
 
 ## What's here
 

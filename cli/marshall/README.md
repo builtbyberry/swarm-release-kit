@@ -1,82 +1,37 @@
-# @builtbyberry/marshall-cli
+# Moved → [builtbyberry/marshall-cli](https://github.com/builtbyberry/marshall-cli)
 
-The **Swarm Release Manager** client — the human path to the same shared store
-the agent reaches over MCP. Read-only today: see what's startable and who holds
-what, from a terminal or a script.
+`@builtbyberry/marshall-cli` is developed and published from its own repo:
 
-This is *not* what the Claude plugin's skills call. They drive the store's MCP
-tools directly (`mcp__srm__release_next`, …); this CLI is the secondary path for
-people, and the fallback the skills name when the MCP server isn't connected.
+### **https://github.com/builtbyberry/marshall-cli**
 
-Zero runtime dependencies. Node ≥ 18.
-
-## Install
+Nothing to change if you use it — the package name and the `marshall` binary are
+unchanged. Install as always:
 
 ```
 npm install -g @builtbyberry/marshall-cli
 marshall login
 ```
 
-## Commands
+**Upgrade if you are on 0.4.0 or older.** 0.4.0 shipped a retired product name in
+the browser page after `marshall login`, and its README pointed at `mcp__srm__*`
+— an MCP tool shape no host actually exposes. Both are fixed in 0.5.0, the first
+release from the new home.
 
-```
-marshall login                     sign in via the browser (OAuth 2.1 + PKCE)
-marshall logout                    forget the stored tokens
-marshall me                        who this token authenticates as
-marshall next   --release <ver>    startable work, ranked by what it unblocks (read-only)
-marshall status --release <ver>    who holds what + drift (read-only)
-```
+## Why this file still exists
 
-Add `--json` for machine-readable output, or `--project <slug>` when a version
-exists in more than one project.
+`@builtbyberry/marshall-cli@0.4.0` declares its homepage as
+`https://github.com/builtbyberry/swarm-release-kit/tree/main/cli/marshall` —
+this path. Published npm metadata is immutable, so that link points here forever
+for anyone reading the 0.4.0 page on npmjs.com. Deleting this directory would
+turn a live inbound link into a 404, so the code moved and the signpost stayed.
 
-Commands work anywhere once you are signed in — you sign in to a *store*, not to
-a repo. (`marshall me --require-repo` is the exception, and exists for the
-session-start hook: it fails unless the current repo opts into Marshall, which is
-how the hook stays silent in repos that have nothing to do with it.)
+## Why it moved
 
-## Signing in
+The CLI is agent-agnostic, and this repo is organised per agent host — so it fit
+here only as long as no second host existed. It also cannot live in the private
+app repo: npm provenance requires a **public** source repo, and attests the
+tarball against the repo that built it.
 
-`marshall login` registers itself with the store as a public OAuth client, opens your
-browser for consent, and catches the redirect on `127.0.0.1`. Nothing to paste,
-no client secret, no token to mint by hand — the store's Dynamic Client
-Registration means a fresh install works against a store nobody prepared for it.
-
-Tokens land in `~/.config/marshall/credentials.json`, written `0600` and kept outside
-any repo so they cannot be committed. `marshall logout` removes them. The store issues
-short-lived tokens (15 days), so expect to sign in again occasionally.
-
-**No browser?** The URL is printed before the browser is opened — visit it from
-anywhere and the login still completes. (A true headless flow would use the
-store's device grant; that needs a client registered on the store by an operator,
-so it isn't wired up yet.)
-
-**CI / non-interactive:** set `MARSHALL_TOKEN` to a bearer for the store. The env
-always beats a stored login, so a job can never be hijacked by whoever last ran
-`marshall login` on the machine. Note the store has no machine-token flow yet, so
-there is currently no first-class way to *mint* one for CI.
-
-## Configuration
-
-Resolved per repo, with env overrides:
-
-| Setting   | From `release-config.json` `state`      | Env override  |
-| --------- | --------------------------------------- | ------------- |
-| backend   | `state.backend` (default `local-json`)  | `MARSHALL_BACKEND` |
-| store URL | `state.url` (default: the hosted store) | `MARSHALL_URL`     |
-| project   | `state.project`                         | `MARSHALL_PROJECT` |
-| token     | `marshall login` (never a tracked file)      | `MARSHALL_TOKEN`   |
-
-`backend` is only consulted by `marshall me --require-repo` (the hook's gate).
-Everything else just needs a store and a credential, so a fresh install works
-from any directory. The value stays the literal `"srm"` — it lives in repos'
-tracked config files, so renaming it would break every repo already opted in.
-
-`MARSHALL_CONFIG_HOME` relocates the credentials file (the test suite points it at a
-temp dir so it never touches real credentials).
-
-## Develop
-
-```
-npm test    # node --test
-```
+0.5.0 onward publishes from marshall-cli via npm trusted publishing (OIDC), and
+its provenance names that repo. This repo can no longer publish the package: the
+`cli-publish.yml` workflow is gone, so a `cli-v*` tag here does nothing.
