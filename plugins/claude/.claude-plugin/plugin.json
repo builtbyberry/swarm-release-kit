@@ -1,7 +1,7 @@
 {
   "name": "srm",
   "displayName": "Swarm Release Manager (Claude)",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "DEPRECATED \u2014 superseded by Marshall. Install: /plugin marketplace add builtbyberry/marshall-claude-plugin then /plugin install marshall@marshall. Nothing in your repo changes; state.backend stays \"srm\". This plugin still works and is no longer developed.",
   "author": {
     "name": "Daniel Berry",
